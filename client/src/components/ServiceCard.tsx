@@ -14,6 +14,7 @@ interface ServiceCardProps {
     camioneta?: number;
   };
   duration?: number;
+  imageUrl?: string;
   onSelect: (serviceId: string) => void;
 }
 
@@ -29,6 +30,7 @@ export default function ServiceCard({
   description, 
   prices, 
   duration,
+  imageUrl,
   onSelect 
 }: ServiceCardProps) {
   const formatPrice = (price: number) => {
@@ -41,6 +43,19 @@ export default function ServiceCard({
 
   return (
     <Card className="w-full max-w-sm hover-elevate" data-testid={`card-service-${id}`}>
+      {imageUrl && (
+        <div className="p-3 pb-0">
+          <img 
+            src={imageUrl} 
+            alt={title} 
+            className="service-img w-full h-40 object-cover rounded-lg"
+            onError={(e) => {
+              // Hide broken images
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold text-foreground">
           {title}

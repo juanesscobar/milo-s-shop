@@ -37,20 +37,76 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   // Mock data for demonstration
   const mockProducts = [
     {
-      id: "product-1",
-      nameKey: "product.item1",
-      title: "Produto Premium",
-      description: "Produto de alta qualidade",
-      prices: { auto: 50000 },
-      duration: 30
+      id: "washVacuum",
+      nameKey: "service.washVacuum",
+      title: "Ducha y aspirado",
+      description: "Incluye shampoo V-Floc",
+      prices: { auto: 50000, suv: 70000, camioneta: 100000 },
+      duration: 30,
+      imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop&crop=center"
     },
     {
-      id: "product-2", 
-      nameKey: "product.item2",
-      title: "Produto Especial",
-      description: "Edição limitada",
-      prices: { auto: 75000 },
-      duration: 45
+      id: "washWax", 
+      nameKey: "service.washWax",
+      title: "Lavado + encerado",
+      description: "Carro polido refletindo luz forte",
+      prices: { auto: 70000, suv: 90000, camioneta: 120000 },
+      duration: 45,
+      imageUrl: "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=400&h=300&fit=crop&crop=center"
+    },
+    {
+      id: "polishCommercial",
+      nameKey: "service.polishCommercial", 
+      title: "Pulida Comercial",
+      description: "Máquina de polimento em ação",
+      prices: { auto: 300000, suv: 350000, camioneta: 450000 },
+      duration: 120,
+      imageUrl: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=400&h=300&fit=crop&crop=center"
+    },
+    {
+      id: "headlightCrystal",
+      nameKey: "service.headlightCrystal",
+      title: "Cristalización de Faro", 
+      description: "Close-up de farol restaurado",
+      prices: { auto: 100000, suv: 100000, camioneta: 100000 },
+      duration: 60,
+      imageUrl: "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=400&h=300&fit=crop&crop=center"
+    },
+    {
+      id: "acidRain",
+      nameKey: "service.acidRain",
+      title: "Eliminación de lluvia ácida",
+      description: "Vidrio/pintura limpa, sem manchas",
+      prices: { auto: 100000, suv: 150000, camioneta: 150000 },
+      duration: 90,
+      imageUrl: "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=400&h=300&fit=crop&crop=center"
+    },
+    {
+      id: "deepInterior", 
+      nameKey: "service.deepInterior",
+      title: "Limpieza interior",
+      description: "Banco de couro/tecido limpo e higienizado",
+      prices: { auto: 350000, suv: 400000, camioneta: 500000 },
+      duration: 150,
+      imageUrl: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=400&h=300&fit=crop&crop=center"
+    },
+    {
+      id: "nanoCeramic",
+      nameKey: "service.nanoCeramic",
+      title: "Nano cerámica",
+      description: "Close-up de água escorrendo com efeito repelente",
+      prices: { auto: 600000, suv: 800000, camioneta: 1000000 },
+      duration: 240,
+      imageUrl: "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&h=300&fit=crop&crop=center"
+    },
+    {
+      id: "nanoMaintenance",
+      nameKey: "service.nanoMaintenance", 
+      title: "Mantenimiento nano cerámica",
+      description: "Carro sendo encerado com pano de microfibra",
+      prices: { auto: 150000, suv: 200000, camioneta: 250000 },
+      duration: 60,
+      imageUrl: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400&h=300&fit=crop&crop=center"
     }
   ];
 

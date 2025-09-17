@@ -1,0 +1,60 @@
+Milos’Shop – Serviços com Imagens Ilustrativas
+Este documento organiza cada serviço do app Milos’Shop com a adição de imagens ilustrativas. O campo `imageUrl` deve ser adicionado em cada documento da coleção `services` no Firestore. Essas imagens podem ser trocadas por links do Unsplash, Pexels ou suas próprias fotos.
+■ Estrutura no Firestore services: [
+  {
+    "id": "washVacuum",
+    "name": "Ducha y aspirado",
+    "description": "Incluye shampoo V-Floc",
+    "price": {"auto": 50000, "suv": 70000, "camioneta": 100000},
+    "imageUrl": "https://link-da-imagem-ducha.jpg"
+} ]
+■ Estilo CSS para as imagens .service-card img.service-img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+■ Serviços e Imagens Ilustrativas
+  Serviço
+■ Ducha y aspirado
+■ Lavado + encerado
+■ Pulida Comercial
+■ Cristalización de Faro
+■■ Eliminación de lluvia á
+■■ Limpieza interior
+■■ Nano cerámica
+■■ Mantenimiento nano c
+Descrição
+Carro com espuma/brilho – lavagem básica.
+Carro polido refletindo luz forte.
+Máquina de polimento em ação, detalhe da latar
+Close-up de farol restaurado (antes/depois).
+idVaidro/pintura limpa, sem manchas de chuva áci
+Banco de couro/tecido limpo e higienizado.
+Close-up de água escorrendo com efeito repele
+ráCmaricroa sendo encerado com pano de microfibra.
+■ Inserir aqui link de imagem ilust
+■ Inserir aqui link de imagem ilust
+ia■. Inserir aqui link de imagem ilust
+■ Inserir aqui link de imagem ilust
+a■. Inserir aqui link de imagem ilust
+■ Inserir aqui link de imagem ilust
+te■. Inserir aqui link de imagem ilust
+■ Inserir aqui link de imagem ilust
+    Exemplo de imagem (link ou arquivo)
+rativa
+rativa
+rativa
+rativa
+     cdrativa
+rativa
+nrativa
+erativa
+■■ Implementação no React <div className="service-card">
+  <img src={service.imageUrl} alt={service.name} className="service-img" />
+  <h3>{service.name}</h3>
+  <p>{service.description}</p>
+  <span>{service.price.auto} Gs</span>
+  <button className="btn btn-primary">Seleccionar</button>
+</div>

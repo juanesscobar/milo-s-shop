@@ -12,7 +12,8 @@ export default function ServiceCardExample() {
       suv: 70000,
       camioneta: 100000
     },
-    duration: 30
+    duration: 30,
+    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop&crop=center"
   };
 
   const handleSelect = (serviceId: string) => {
