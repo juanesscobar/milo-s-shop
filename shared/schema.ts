@@ -7,7 +7,7 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  phone: text("phone").notNull(),
+  phone: text("phone").notNull().unique(),
   email: text("email"),
   role: text("role", { enum: ["client", "admin"] }).notNull().default("client"),
   language: text("language", { enum: ["es", "pt"] }).notNull().default("es"),
@@ -26,7 +26,7 @@ export const vehicles = pgTable("vehicles", {
 // Services table
 export const services = pgTable("services", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  nameKey: text("name_key").notNull(),
+  nameKey: text("name_key").notNull().unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   prices: jsonb("prices").notNull().$type<{auto?: number; suv?: number; camioneta?: number}>(),

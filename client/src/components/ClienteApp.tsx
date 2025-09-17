@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Header from "./Header";
 import ServiceCard from "./ServiceCard";
 import BookingCard from "./BookingCard";
+import BookingFlow from "./BookingFlow";
 import { ShoppingCart, User, History, Car } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Service } from "@shared/schema";
@@ -18,6 +19,7 @@ interface ClienteAppProps {
 export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
   const [selectedVehicleType, setSelectedVehicleType] = useState<'auto' | 'suv' | 'camioneta'>('auto');
+  const [bookingService, setBookingService] = useState<Service | null>(null);
 
   const content = {
     es: {
@@ -69,13 +71,37 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   ];
 
   const handleServiceReserve = (service: Service) => {
-    console.log('Service reserved:', service);
-    // TODO: Implement booking flow
+    setBookingService(service);
+  };
+  
+  const handleBackToServices = () => {
+    setBookingService(null);
   };
 
   const handleOrderDetails = (orderId: string) => {
     console.log('View order details:', orderId);
   };
+
+  // Show booking flow if service is selected
+  if (bookingService) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header 
+          currentLanguage={currentLanguage}
+          onLanguageChange={setCurrentLanguage}
+        />
+        
+        <div className="container mx-auto px-4 py-6">
+          <BookingFlow 
+            service={bookingService}
+            selectedVehicleType={selectedVehicleType}
+            onBack={handleBackToServices}
+            language={currentLanguage}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

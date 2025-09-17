@@ -88,7 +88,7 @@ export async function seedDatabase() {
     
     // Insert services
     for (const service of seedServices) {
-      await db.insert(services).values([service]).onConflictDoNothing();
+      await db.insert(services).values([service]).onConflictDoNothing({ target: services.nameKey });
     }
     
     console.log("✅ Database seeded successfully!");
