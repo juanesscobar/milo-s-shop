@@ -313,6 +313,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
                 value={userForm.name}
                 onChange={(e) => setUserForm({...userForm, name: e.target.value})}
                 data-testid="input-name"
+                className="bg-white text-black"
               />
             </div>
             <div>
@@ -322,6 +323,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
                 value={userForm.phone}
                 onChange={(e) => setUserForm({...userForm, phone: e.target.value})}
                 data-testid="input-phone"
+                className="bg-white text-black"
               />
             </div>
             <div>
@@ -332,6 +334,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
                 value={userForm.email}
                 onChange={(e) => setUserForm({...userForm, email: e.target.value})}
                 data-testid="input-email"
+                className="bg-white text-black"
               />
             </div>
           </CardContent>
@@ -365,6 +368,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
                 onChange={(e) => setVehicleForm({...vehicleForm, plate: e.target.value.toUpperCase()})}
                 placeholder="ABC-123"
                 data-testid="input-plate"
+                className="bg-white text-black"
               />
             </div>
             <div>
@@ -415,6 +419,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
                 onChange={(e) => setBookingData({...bookingData, date: e.target.value})}
                 min={new Date().toISOString().split('T')[0]}
                 data-testid="input-date"
+                className="bg-white text-black"
               />
             </div>
             <div>
@@ -438,6 +443,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
                 onChange={(e) => setBookingData({...bookingData, notes: e.target.value})}
                 placeholder="Instrucciones especiales..."
                 data-testid="textarea-notes"
+                className="bg-white text-black"
               />
             </div>
             <div className="p-4 bg-muted rounded-lg">
