@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { User, ShieldCheck } from "lucide-react";
+import logoImage from "@assets/EC79CEF7-2BBB-454F-B38A-FC51A39A2769_1758151290656.png";
 
 interface HomeProps {
   language?: 'es' | 'pt';
@@ -42,13 +43,10 @@ export default function Home({ language = 'es' }: HomeProps) {
         {/* Logo and Title */}
         <div className="text-center space-y-4">
           <img 
-            src="/milos-logo.png" 
+            src={logoImage} 
             alt="Milos'Shop" 
-            className="h-24 w-24 mx-auto"
-            onError={(e) => {
-              // Replace with placeholder if logo not found  
-              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 24 24' fill='none' stroke='%23E10600' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z'/%3E%3Cpath d='m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9'/%3E%3Cpath d='M12 3v6'/%3E%3C/svg%3E";
-            }}
+            className="h-32 w-32 mx-auto rounded-full object-cover"
+            data-testid="img-logo"
           />
           <div>
             <h1 className="text-4xl font-bold text-foreground mb-2">
