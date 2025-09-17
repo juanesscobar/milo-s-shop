@@ -1,0 +1,83 @@
+Prompt – App Milos’Shop
+Especificação para customizar o aplicativo com fundo preto, cartões em branco, logo integrado, interações em vermelho, e tela inicial com dois botões (Administrador / Cliente).
+Branding & Layout
+- Título global: **Milos’Shop**
+- Fundo: preto (#000000)
+- Cartões: branco (#FFFFFF), bordas suaves e sombra leve
+- Texto: branco sobre fundo preto, preto sobre cartões
+- Cor de acento/interação: vermelho #E10600
+- Tipografia: Inter/Montserrat/Helvetica
+- Logo: usar arquivo PNG fornecido, salvar em `public/milos-logo.png`
+- Botões: hover/active com vermelho #E10600 e transição suave
+Rotas
+- `/` (Home): logo, título “Milos’Shop”, dois botões grandes: Cliente → /cliente, Administrado - `/cliente`: painel do cliente
+- `/admin`: painel do administrador
+Componentes
+- Header fixo com logo, título, seletor de idioma ES/PT
+- Botão primário: fundo vermelho, texto branco, radius 12px
+- Botão secundário: transparente, borda vermelha, texto vermelho
+- Card: fundo branco, sombra leve
+- Badges de status: manter, usar vermelho #E10600 em estados ativos
+CSS Base
+:root {
+  --bg: #000000;
+  --card: #ffffff;
+  --text-on-dark: #ffffff;
+  --text-on-light: #111111;
+  --accent: #E10600;
+  --radius: 12px;
+  --shadow: 0 6px 18px rgba(0,0,0,.35);
+}
+html, body, #root { background: var(--bg); color: var(--text-on-dark); }
+.card { background: var(--card); color: var(--text-on-light); border-radius: var(--radius); box
+.btn { padding: 14px 18px; border-radius: 10px; transition: all .18s ease; cursor: pointer; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #c50500; }
+.btn-secondary { border:2px solid var(--accent); color: var(--accent); background:transparent;
+.btn-secondary:hover { background: var(--accent); color: #fff; }
+Header.tsx
+import React from 'react';
+import { Link } from 'react-router-dom';
+r
+
+import '../styles/theme.css';
+export default function Header() {
+  return (
+<header className="header">
+  <div className="brand">
+        <img src="/milos-logo.png" alt="Milos’Shop logo" className="logo" />
+        <span className="title">Milos’Shop</span>
+      </div>
+      <nav style={{display:'flex', gap:12}}>
+        <Link to="/" className="btn btn-secondary">Home</Link>
+        <button className="btn btn-secondary">ES | PT</button>
+      </nav>
+    </header>
+); }
+Home.tsx
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../styles/theme.css';
+export default function Home() {
+  const nav = useNavigate();
+  return (
+    <div className="app-container" style={{padding: '28px 18px'}}>
+      <div style={{textAlign:'center', marginBottom: 24}}>
+        <img src="/milos-logo.png" alt="Milos’Shop" style={{height:96}} />
+        <h1>Milos’Shop</h1>
+        <p style={{opacity:.8}}>Selecione como deseja acessar</p>
+      </div>
+      <div className="card" style={{maxWidth: 560, margin: '0 auto'}}>
+        <div style={{display:'grid', gap:12}}>
+          <button className="btn btn-primary btn-xl" onClick={()=>nav('/cliente')}>Cliente</but
+          <button className="btn btn-secondary btn-xl" onClick={()=>nav('/admin')}>Administrado
+        </div>
+      </div>
+</div> );
+}
+Rotas no App.tsx
+<Routes>
+  <Route path="/" element={<Home/>} />
+  <Route path="/cliente" element={<ClienteApp/>} />
+  <Route path="/admin" element={<AdminApp/>} />
+</Route
