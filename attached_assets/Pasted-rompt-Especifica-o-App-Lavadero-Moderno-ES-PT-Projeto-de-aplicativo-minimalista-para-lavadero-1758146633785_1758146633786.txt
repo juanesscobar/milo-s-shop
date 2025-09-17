@@ -1,0 +1,233 @@
+rompt & Especificação – App Lavadero Moderno
+(ES/PT)
+Projeto de aplicativo minimalista para lavadero em Paraguay. Stack sugerida: React (Vite) + Firebase (Auth, Firestore, Storage, Cloud Functions) + FCM para push. Design system em preto, branco e detalhes em vermelho.
+1) Design System
+● Cores (hex): Preto #000000, Branco #FFFFFF, Vermelho Acento #E10600 (ajustável para contraste AA).
+● Tipografia (web-safe): usar ‘Inter’, ‘Poppins’ ou ‘Montserrat’; fallback ‘Helvetica/Arial’.
+● Estilo: minimalista, fundos claros/escuros com grande contraste; botões com cantos levemente
+arredondados (8px).
+● Ícones: linha fina (Feather/Material Symbols ‘Outlined’).
+● Componentes base: AppBar, Card, Button (primário vermelho, secundário branco contornado), Input,
+Badge de status, Tabela/Lista responsiva.
+● Breakpoints: mobile-first; 360–480px (telefone), 768px (tablet).
+2) Funcionalidades Principais
+ •
+•
+•
+•
+Painel do Cliente: cadastro/login (telefone + placa), escolha de serviço, agendamento, status em tempo real (‘En espera’, ‘En lavado’, ‘Finalizado’), pagamento (card/PIX/físico), push quando pronto. Painel do Administrador: login seguro, dashboard do dia, CRUD de clientes/serviços, agenda, atualização de status, registro de pagamentos e controle de caixa.
+Multilíngue: espanhol e português com chaves i18n. Usuário escolhe idioma no onboarding; detecta locale do navegador.
+Landing pública com descrição dos serviços, galeria e CTA ‘Agendar’ + login no topo direito.
+3) Arquitetura & Deploy
+• Front-end: React + Vite (SPA) hospedado no Firebase Hosting.
+• Back-end: Firebase Cloud Functions (Node 18) para orquestração de pagamentos, webhooks e regras de negócio que não cabem no cliente.
+• Banco: Firestore (coleções: users, vehicles, services, bookings, payments, org, audit). Regras de segurança via Firebase Security Rules.
+• Autenticação: Firebase Auth (telefone por SMS ou e-mail/senha).
+
+• Push: Firebase Cloud Messaging (FCM).
+• Analytics: Google Analytics para Firebase. • Deploy: um comando ‘firebase deploy’.
+4) Modelo de Dados (Firestore – coleções)
+  Coleção
+Campos
+users
+uid, name, phone, plate, role('client'|'admin'), createdAt, language('es'|'pt')
+vehicles
+id, uid, plate, type('auto'|'suv'|'camioneta')
+services
+id, nameKey, descKey, basePrices{auto,suv,camioneta}, durationMin, active
+bookings
+id, uid, vehicleId, serviceId, date, timeSlot, status('waiting'|'washing'|'done'|'ca
+payments
+id, bookingId, method('card'|'pix'|'cash'), amountGs, status('pending'|'paid'|'fail
+org
+singleton: openingHours, address, whatsapp, gallery[]
+audit
+id, actorUid, action, targetRef, ts
+       ncelled'), notes
+ed'), createdAt
+    5) i18n (ES/PT) – chaves essenciais
+{ "app.title": { "es": "Lavadero Moderno", "pt": "Lavadero Moderno" }, "cta.book": { "es": "Agendar", "pt": "Agendar" }, "auth.login": { "es": "Iniciar sesión", "pt": "Entrar" }, "auth.register": { "es": "Crear cuenta", "pt": "Criar conta" }, "field.name": { "es": "Nombre", "pt": "Nome" }, "field.phone": { "es": "Celular", "pt": "Celular" }, "field.plate": { "es": "Placa", "pt": "Placa" }, "status.waiting": { "es": "En espera", "pt": "Em espera" }, "status.washing": { "es": "En lavado", "pt": "Em lavagem" }, "status.done": { "es": "Finalizado", "pt": "Finalizado" }, "pay.method.card": { "es": "Tarjeta", "pt": "Cartão" }, "pay.method.pix": { "es": "PIX", "pt": "PIX" }, "pay.method.cash": { "es": "Pago físico", "pt": "Pagamento físico" }, "toast.ready": { "es": "¡Tu vehículo está listo!", "pt": "Seu veículo está pronto!" } }
+6) Seed de Serviços & Precios (Gs)
+{ "Ducha y aspirado": { "incluye": "Shampoo V-Floc", "precios": { "auto": 50000,
+"suv": 70000, "camioneta": 100000 }, "key": "service.washVacuum" }, "Lavado +
+encerado": { "incluye": "Shampoo V-Floc + Cera líquida carnauba Plus + Cera en pasta
+Native carnauba", "precios": { "auto": 70000, "suv": 90000, "camioneta": 120000 },
+"key": "service.washWax" }, "Pulida Comercial": { "incluye": "Lavado
+interior/exterior + Pulida 2 pasos (V-Cut + V80) + protección 1 año", "precios": {
+"auto": 300000, "suv": 350000, "camioneta": 450000 }, "key":
+"service.polishCommercial" }, "Cristalización de Faro": { "incluye": "Par + faro
+trasero", "precios": { "par": 100000 }, "key": "service.headlightCrystal" },
+"Eliminación de lluvia ácida": { "precios": { "auto": 100000, "suv_camioneta": 150000
+}, "key": "service.acidRain" }, "Limpieza interior (desmantelado)": { "precios": {
+"auto": 350000, "suv": 400000, "camioneta": 500000 }, "key": "service.deepInterior"
+}, "Protección nano cerámica CarPro": { "incluye": "Lavado detallado, pulida, nano
+cerámica + mantenimiento", "precios": { "auto": 600000, "suv": 800000, "camioneta":
+1000000 }, "key": "service.nanoCeramic" }, "Mantenimiento de nano cerámica": {
+"precios": { "auto": 150000, "suv": 200000, "camioneta": 250000 }, "key":
+"service.nanoMaintenance" } }
+7) Regras de Segurança (esboço Firestore)
+
+ rules_version = '2';
+ service cloud.firestore {
+ match /databases/{database}/documents {
+ function isAdmin() { return request.auth != null && request.auth.token.role ==
+ 'admin'; }
+ function isSelf(uid) { return request.auth != null && request.auth.uid == uid; }
+ match /users/{uid} {
+ allow read: if isSelf(uid) || isAdmin();
+ allow write: if isSelf(uid) || isAdmin();
+ }
+ match /bookings/{id} {
+ allow create: if request.auth != null;
+ allow read: if isAdmin() || request.auth.uid == resource.data.uid;
+ allow update: if isAdmin() || (request.auth.uid == resource.data.uid &&
+ request.resource.data.status == resource.data.status);
+ allow delete: if isAdmin();
+ }
+ match /services/{id} {
+ allow read: if true;
+ allow write: if isAdmin();
+ }
+ match /payments/{id} {
+ allow read, write: if isAdmin() || (request.auth.uid == resource.data.clientUid);
+ }
+ }
+ }
+8) Fluxos de UI
+•
+•
+•
+Onboarding ➝ escolha idioma (ES/PT) ➝ login SMS ou e■mail ➝ cadastro (nome, celular, placa) ➝ home (serviços + CTA ‘Agendar’).
+Agendamento: escolher veículo/tipo ➝ escolher serviço ➝ selecionar data/hora (slots livres) ➝ confirmar ➝ opcional pagar ➝ ver status.
+Admin: login ➝ Dashboard com cards: ‘Agendamentos de hoje’, ‘Em lavagem’, ‘Finalizados’, ‘Receita do dia’ ➝ Tabela com filtros ➝ Detalhe do agendamento ➝ mudar status + registrar pagamento.
+9) PROMPT para Replit (colar exatamente)
+Crie um projeto web completo usando React + Vite e Firebase (Auth, Firestore,
+Functions, Hosting, FCM) para um lavadero.
+Requisitos:
+1) Tema minimalista em preto/branco com acento vermelho (#E10600). Use fonte Inter/Montserrat.
+2) Páginas/Rotas: / (landing), /login, /app (cliente), /admin.
+3) i18n (es/pt) com chaves; autodetecte idioma do navegador e permita trocar no header.
+4) Módulos:
+- Autenticação (telefone por SMS e e■mail/senha).
+- Cliente: cadastro (nome, celular, placa), lista de serviços (a partir do Firestore), agendamento com time■slots, acompanhamento de status, pagamento (mock + PIX link), push quando finalizado.
+- Admin: dashboard do dia, CRUD de serviços e preços, atualização de status
+
+(waiting/washing/done), registro de pagamento (card/pix/cash), relatórios simples.
+5) Firestore: coleções users, vehicles, services, bookings, payments, org, audit.
+Popular a coleção ‘services’ com os preços do seed abaixo.
+6) Segurança: aplicar as regras do bloco Firestore Rules (ajustar conforme
+necessário).
+7) Scripts de execução: `npm run dev` para desenvolvimento; `npm run build` para
+produção. Preparar `firebase.json` para deploy.
+8) Responsivo: mobile-first; componentes acessíveis (aria-labels, contraste AA).
+Entregáveis:
+- Código limpo, separado em componentes (Button, Card, StatusBadge, ServiceCard,
+BookingTable).
+- Hook `useI18n()` para ES/PT.
+- Função Cloud Function `sendReadyNotification(bookingId)` para disparar push FCM
+quando status virar `done`.
+- README com passos: configurar projeto Firebase, variáveis .env, e `firebase
+deploy`.
+Seed de serviços (JSON):
+{
+"Ducha y aspirado": {
+"incluye": "Shampoo V-Floc",
+"precios": {
+"auto": 50000,
+"suv": 70000,
+"camioneta": 100000
+},
+"key": "service.washVacuum"
+},
+"Lavado + encerado": {
+"incluye": "Shampoo V-Floc + Cera líquida carnauba Plus + Cera en pasta Native
+carnauba",
+"precios": {
+"auto": 70000,
+"suv": 90000,
+"camioneta": 120000
+},
+"key": "service.washWax"
+},
+"Pulida Comercial": {
+"incluye": "Lavado interior/exterior + Pulida 2 pasos (V-Cut + V80) + protección 1
+año",
+"precios": {
+"auto": 300000,
+"suv": 350000,
+"camioneta": 450000
+},
+"key": "service.polishCommercial"
+},
+"Cristalización de Faro": {
+"incluye": "Par + faro trasero",
+"precios": {
+"par": 100000
+},
+"key": "service.headlightCrystal"
+},
+"Eliminación de lluvia ácida": {
+
+"precios": {
+"auto": 100000,
+"suv_camioneta": 150000
+},
+"key": "service.acidRain"
+},
+"Limpieza interior (desmantelado)": {
+"precios": {
+"auto": 350000,
+"suv": 400000,
+"camioneta": 500000
+},
+"key": "service.deepInterior"
+},
+"Protección nano cerámica CarPro": {
+"incluye": "Lavado detallado, pulida, nano cerámica + mantenimiento",
+"precios": {
+"auto": 600000,
+"suv": 800000,
+"camioneta": 1000000
+},
+"key": "service.nanoCeramic"
+},
+"Mantenimiento de nano cerámica": {
+"precios": {
+"auto": 150000,
+"suv": 200000,
+"camioneta": 250000
+},
+"key": "service.nanoMaintenance"
+}
+}
+10) Comandos & Passos (rápidos)
+# Local
+npm create vite@latest lavadero -- --template react
+cd lavadero
+npm i firebase react-router-dom
+npm i -D vite-plugin-pwa
+# Firebase
+npm i -g firebase-tools
+firebase login
+firebase init (Hosting, Firestore, Functions)
+npm run dev
+# Deploy
+npm run build
+firebase deploy
+
+• • • •
+Agendamentos do dia (total / por status). Ticket médio (Gs) e receita do dia/mês. Tempo médio de lavagem por serviço. Distribuição de métodos de pagamento.
+• • • •
+• • • • •
+Contraste mínimo AA; tamanhos 14–16 px; toques > 44px. Leitores de tela (aria-labels) e foco visível.
+Lazy-load de imagens; compressão WebP; ícones SVG.
+PWA opcional para ‘instalar’ no celular (manifest + service worker).
+11) Dashboard – Indicadores (Admin)
+12) Pagamentos & PIX
+O app deve registrar pagamentos com os métodos: cartão, PIX e físico. No MVP, o PIX pode ser um link/QR para uma chave estática exibida ao cliente e a confirmação marcada manualmente no Admin. Para produção, integrar provedor local de pagamento com webhook para atualizar `payments.status`.
+13) Acessibilidade & Performance
+14) Landing – Conteúdo sugerido
+Hero: foto de carro brilhando + CTA ‘Agendar’.
+Diferenciais: produtos premium (V■Floc, CarPro), equipe experiente, rapidez. Lista de preços com cartões por serviço.
+Avaliações e galeria antes/depois.
+Mapa + WhatsApp + horário de atendimento.
