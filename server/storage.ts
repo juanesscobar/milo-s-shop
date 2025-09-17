@@ -50,7 +50,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
+    const [user] = await db.insert(users).values([insertUser]).returning();
     return user;
   }
 
@@ -60,7 +60,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createVehicle(insertVehicle: InsertVehicle): Promise<Vehicle> {
-    const [vehicle] = await db.insert(vehicles).values(insertVehicle).returning();
+    const [vehicle] = await db.insert(vehicles).values([insertVehicle]).returning();
     return vehicle;
   }
 
@@ -75,7 +75,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createService(insertService: InsertService): Promise<Service> {
-    const [service] = await db.insert(services).values(insertService).returning();
+    const [service] = await db.insert(services).values([insertService]).returning();
     return service;
   }
 
@@ -94,7 +94,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createBooking(insertBooking: InsertBooking): Promise<Booking> {
-    const [booking] = await db.insert(bookings).values(insertBooking).returning();
+    const [booking] = await db.insert(bookings).values([insertBooking]).returning();
     return booking;
   }
 
@@ -108,7 +108,7 @@ export class DatabaseStorage implements IStorage {
 
   // Payments
   async createPayment(insertPayment: InsertPayment): Promise<Payment> {
-    const [payment] = await db.insert(payments).values(insertPayment).returning();
+    const [payment] = await db.insert(payments).values([insertPayment]).returning();
     return payment;
   }
 

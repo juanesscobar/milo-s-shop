@@ -1,23 +1,17 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Car, Truck, Caravan } from "lucide-react";
+import { Car, Truck, Caravan, Clock } from "lucide-react";
+import type { Service } from "@shared/schema";
 
 interface ServiceCardProps {
-  id: string;
-  nameKey: string;
-  title: string;
-  description: string;
-  prices: {
-    auto?: number;
-    suv?: number;
-    camioneta?: number;
-  };
-  duration?: number;
-  imageUrl?: string;
-  onSelect: (serviceId: string) => void;
+  service: Service;
+  selectedVehicleType: 'auto' | 'suv' | 'camioneta';
+  onReserve: () => void;
+  language: 'es' | 'pt';
 }
 
+// Vehicle icons for reference
 const vehicleIcons = {
   auto: Car,
   suv: Caravan,
@@ -25,13 +19,10 @@ const vehicleIcons = {
 };
 
 export default function ServiceCard({ 
-  id, 
-  title, 
-  description, 
-  prices, 
-  duration,
-  imageUrl,
-  onSelect 
+  service,
+  selectedVehicleType,
+  onReserve,
+  language
 }: ServiceCardProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-PY', {
@@ -41,13 +32,27 @@ export default function ServiceCard({
     }).format(price);
   };
 
+  const content = {
+    es: {
+      reserve: "Reservar",
+      minutes: "min"
+    },
+    pt: {
+      reserve: "Reservar",
+      minutes: "min"
+    }
+  };
+
+  const t = content[language];
+  const currentPrice = service.prices[selectedVehicleType] || 0;
+
   return (
-    <Card className="w-full max-w-sm hover-elevate" data-testid={`card-service-${id}`}>
-      {imageUrl && (
+    <Card className="w-full hover-elevate" data-testid={`card-service-${service.id}`}>
+      {service.imageUrl && (
         <div className="p-3 pb-0">
           <img 
-            src={imageUrl} 
-            alt={title} 
+            src={service.imageUrl} 
+            alt={service.title} 
             className="service-img w-full h-40 object-cover rounded-lg"
             onError={(e) => {
               // Hide broken images
@@ -58,50 +63,39 @@ export default function ServiceCard({
       )}
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold text-foreground">
-          {title}
+          {service.title}
         </CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
-          {description}
+          {service.description}
         </CardDescription>
-        {duration && (
-          <Badge variant="secondary" className="w-fit">
-            {duration} min
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {service.durationMin && (
+            <Badge variant="secondary" className="w-fit">
+              <Clock className="h-3 w-3 mr-1" />
+              {service.durationMin} {t.minutes}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       
       <CardContent className="pb-4">
-        <div className="space-y-2">
-          {Object.entries(prices).map(([vehicleType, price]) => {
-            const IconComponent = vehicleIcons[vehicleType as keyof typeof vehicleIcons];
-            return (
-              <div 
-                key={vehicleType} 
-                className="flex items-center justify-between py-1"
-                data-testid={`price-${vehicleType}-${id}`}
-              >
-                <div className="flex items-center gap-2">
-                  {IconComponent && <IconComponent className="h-4 w-4 text-muted-foreground" />}
-                  <span className="text-sm font-medium capitalize">
-                    {vehicleType}
-                  </span>
-                </div>
-                <span className="text-sm font-bold text-primary">
-                  {formatPrice(price)}
-                </span>
-              </div>
-            );
-          })}
+        <div className="text-center">
+          <div className="text-2xl font-bold text-primary" data-testid={`price-${selectedVehicleType}-${service.id}`}>
+            {formatPrice(currentPrice)}
+          </div>
+          <div className="text-sm text-muted-foreground capitalize">
+            {selectedVehicleType}
+          </div>
         </div>
       </CardContent>
       
       <CardFooter>
         <Button 
-          onClick={() => onSelect(id)}
+          onClick={onReserve}
           className="w-full"
-          data-testid={`button-select-${id}`}
+          data-testid={`button-reserve-${service.id}`}
         >
-          Seleccionar
+          {t.reserve}
         </Button>
       </CardFooter>
     </Card>
