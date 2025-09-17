@@ -25,13 +25,15 @@ interface CustomerPortalProps {
   userBookings: any[];
   onBookService: (serviceId: string, vehicleType: string) => void;
   onViewBookingDetails: (bookingId: string) => void;
+  language?: 'es' | 'pt';
 }
 
 export default function CustomerPortal({ 
   services, 
   userBookings, 
   onBookService, 
-  onViewBookingDetails 
+  onViewBookingDetails,
+  language = 'es'
 }: CustomerPortalProps) {
   const [selectedVehicleType, setSelectedVehicleType] = useState<'auto' | 'suv' | 'camioneta' | null>(null);
 
@@ -109,6 +111,7 @@ export default function CustomerPortal({
               <VehicleSelector
                 selectedType={selectedVehicleType}
                 onSelect={setSelectedVehicleType}
+                language={language}
               />
             </CardContent>
           </Card>

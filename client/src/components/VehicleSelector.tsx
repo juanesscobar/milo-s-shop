@@ -6,33 +6,41 @@ interface VehicleSelectorProps {
   selectedType: 'auto' | 'suv' | 'camioneta' | null;
   onSelect: (type: 'auto' | 'suv' | 'camioneta') => void;
   disabled?: boolean;
+  language?: 'es' | 'pt';
 }
 
-const vehicleTypes = [
+const getVehicleTypes = (language: 'es' | 'pt') => [
   {
     id: 'auto' as const,
-    name: 'Auto',
+    name: language === 'es' ? 'Auto' : 'Auto',
     icon: Car,
-    description: 'Vehículo estándar'
+    description: language === 'es' ? 'Vehículo estándar' : 'Veículo padrão'
   },
   {
     id: 'suv' as const,
     name: 'SUV',
     icon: Caravan,
-    description: 'Vehículo utilitario deportivo'
+    description: language === 'es' ? 'Vehículo utilitario deportivo' : 'Veículo utilitário esportivo'
   },
   {
     id: 'camioneta' as const,
-    name: 'Camioneta',
+    name: language === 'es' ? 'Camioneta' : 'Caminhonete',
     icon: Truck,
-    description: 'Camioneta pickup'
+    description: language === 'es' ? 'Camioneta pickup' : 'Caminhonete pickup'
   }
 ];
 
-export default function VehicleSelector({ selectedType, onSelect, disabled = false }: VehicleSelectorProps) {
+const getTranslations = (language: 'es' | 'pt') => ({
+  vehicleType: language === 'es' ? 'Tipo de vehículo' : 'Tipo de veículo'
+});
+
+export default function VehicleSelector({ selectedType, onSelect, disabled = false, language = 'es' }: VehicleSelectorProps) {
+  const vehicleTypes = getVehicleTypes(language);
+  const t = getTranslations(language);
+  
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-foreground">Tipo de vehículo</h3>
+      <h3 className="text-sm font-medium text-foreground">{t.vehicleType}</h3>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {vehicleTypes.map((vehicle) => {
           const IconComponent = vehicle.icon;

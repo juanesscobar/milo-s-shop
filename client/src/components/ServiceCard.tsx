@@ -35,11 +35,17 @@ export default function ServiceCard({
   const content = {
     es: {
       reserve: "Reservar",
-      minutes: "min"
+      minutes: "min",
+      auto: "Auto",
+      suv: "SUV",
+      camioneta: "Camioneta"
     },
     pt: {
       reserve: "Reservar",
-      minutes: "min"
+      minutes: "min",
+      auto: "Auto",
+      suv: "SUV",
+      camioneta: "Caminhonete"
     }
   };
 
@@ -83,8 +89,8 @@ export default function ServiceCard({
           <div className="text-2xl font-bold text-primary" data-testid={`price-${selectedVehicleType}-${service.id}`}>
             {formatPrice(currentPrice)}
           </div>
-          <div className="text-sm text-muted-foreground capitalize">
-            {selectedVehicleType}
+          <div className="text-sm text-muted-foreground">
+            {t[selectedVehicleType]}
           </div>
         </div>
       </CardContent>

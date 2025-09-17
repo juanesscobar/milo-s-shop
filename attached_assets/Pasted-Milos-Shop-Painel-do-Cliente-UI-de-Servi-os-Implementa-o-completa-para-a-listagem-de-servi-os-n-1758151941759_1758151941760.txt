@@ -1,0 +1,153 @@
+Milos’Shop — Painel do Cliente (UI de Serviços)
+Implementação completa para a listagem de serviços no painel do cliente, com imagem real, título, duração, subtítulo, copy, preços e botão ‘Seleccionar’.
+1) src/data/services.json
+[ {
+    "slug":"ducha-aspirado",
+    "title_es":"Ducha y aspirado",
+    "title_pt":"Ducha e aspirador",
+    "subtitle_es":"Shampoo V-Floc + aspirado completo",
+    "subtitle_pt":"Shampoo V-Floc + aspiração completa",
+    "copy_es":"Limpieza rápida con acabado uniforme.",
+    "copy_pt":"Limpeza rápida com acabamento uniforme.",
+    "duration_min":30,
+    "prices":{"auto":50000,"suv":70000,"camioneta":100000},
+    "imageUrl":"https://images.pexels.com/photos/6870323/pexels-photo-6870323.jpeg"
+}, {
+    "slug":"lavado-encerado",
+    "title_es":"Lavado + encerado",
+    "title_pt":"Lavagem + enceramento",
+    "subtitle_es":"Incluye shampoo V-Floc + Cera líquida carnauba Plus + Cera en pasta Native",
+    "subtitle_pt":"Inclui shampoo V-Floc + Cera líquida carnaúba Plus + Cera em pasta Native",
+    "copy_es":"Brillo intenso y protección de la pintura.",
+    "copy_pt":"Brilho intenso e proteção da pintura.",
+    "duration_min":45,
+    "prices":{"auto":70000,"suv":90000,"camioneta":120000},
+    "imageUrl":"https://images.pexels.com/photos/9796/car-polishing.jpg"
+}, {
+    "slug":"pulida-comercial",
+    "title_es":"Pulida Comercial (2 pasos)",
+    "title_pt":"Polimento Comercial (2 passos)",
+    "subtitle_es":"Lavado detallado interior/exterior + Pulida (V-Cut + V80) + protección 1 año",
+    "subtitle_pt":"Lavagem detalhada interno/externo + Polimento (V-Cut + V80) + proteção 1 ano",
+    "copy_es":"Corrección de pintura y realce de brillo.",
+    "copy_pt":"Correção de pintura e realce de brilho.",
+    "duration_min":120,
+    "prices":{"auto":300000,"suv":350000,"camioneta":450000},
+    "imageUrl":"https://images.pexels.com/photos/6870334/pexels-photo-6870334.jpeg"
+}, {
+    "slug":"cristalizacion-faro",
+    "title_es":"Cristalización de Faro",
+    "title_pt":"Cristalização de Farol",
+    "subtitle_es":"100.000 Gs el par (incluye faro trasero)",
+    "subtitle_pt":"100.000 Gs o par (inclui farol traseiro)",
+    "copy_es":"Restauración + sellado UV para máxima claridad.",
+    "copy_pt":"Restauração + selagem UV para máxima clareza.",
+    "duration_min":60,
+    "prices":{"auto":100000,"suv":100000,"camioneta":100000},
+    "imageUrl":"https://images.pexels.com/photos/6870348/pexels-photo-6870348.jpeg"
+}, {
+    "slug":"lluvia-acida",
+    "title_es":"Eliminación de lluvia ácida",
+    "title_pt":"Remoção de chuva ácida",
+    "subtitle_es":"Auto: 100.000 Gs • SUV/Camioneta: 150.000 Gs",
+    "subtitle_pt":"Auto: 100.000 Gs • SUV/Camioneta: 150.000 Gs",
+    "copy_es":"Descontaminación química y neutralización de manchas minerales.",
+    "copy_pt":"Descontaminação química e neutralização de manchas minerais.",
+
+    "duration_min":90,
+    "prices":{"auto":100000,"suv":150000,"camioneta":150000},
+    "imageUrl":"https://images.pexels.com/photos/6870344/pexels-photo-6870344.jpeg"
+}, {
+    "slug":"limpieza-interior",
+    "title_es":"Limpieza interior (desmantelado)",
+    "title_pt":"Limpeza interna (desmontagem)",
+    "subtitle_es":"Higienización profunda de tapicería",
+    "subtitle_pt":"Higienização profunda de estofados",
+    "copy_es":"Remoción de manchas, cepillado técnico y extracción a vapor.",
+    "copy_pt":"Remoção de manchas, escovação técnica e extração a vapor.",
+    "duration_min":120,
+    "prices":{"auto":350000,"suv":400000,"camioneta":500000},
+    "imageUrl":"https://images.pexels.com/photos/6870322/pexels-photo-6870322.jpeg"
+}, {
+    "slug":"nano-ceramica",
+    "title_es":"Protección nano cerámica CarPro",
+    "title_pt":"Proteção nano cerâmica CarPro",
+    "subtitle_es":"Incluye: lavado detallado, pulida y capa cerámica + mantenimiento",
+    "subtitle_pt":"Inclui: lavagem detalhada, polimento e camada cerâmica + manutenção",
+    "copy_es":"Hidrofobia, brillo y resistencia UV.",
+    "copy_pt":"Hidrofobia, brilho e resistência UV.",
+    "duration_min":240,
+    "prices":{"auto":600000,"suv":800000,"camioneta":1000000},
+    "imageUrl":"https://images.pexels.com/photos/6870332/pexels-photo-6870332.jpeg"
+}, {
+    "slug":"mantenimiento-nano",
+    "title_es":"Mantenimiento de nano cerámica",
+    "title_pt":"Manutenção da nano cerâmica",
+    "subtitle_es":"Refuerzo de capa y brillo",
+    "subtitle_pt":"Reforço de camada e brilho",
+    "copy_es":"Descontaminación suave + top coat para recuperar el beading.",
+    "copy_pt":"Descontaminação suave + top coat para recuperar o beading.",
+    "duration_min":60,
+    "prices":{"auto":150000,"suv":200000,"camioneta":250000},
+    "imageUrl":"https://images.pexels.com/photos/6870317/pexels-photo-6870317.jpeg"
+} ]
+2) src/components/ServiceCard.tsx
+type Service = {
+  slug:string;
+  title_es:string; title_pt:string;
+  subtitle_es:string; subtitle_pt:string;
+  copy_es:string; copy_pt:string;
+  duration_min:number;
+  prices:{auto:number;suv:number;camioneta:number};
+  imageUrl:string;
+};
+export default function ServiceCard({s, lang, onSelect}:{s:Service; lang:'es'|'pt'; onSelect:(slug:string)=
+  const title = lang==='es'?s.title_es:s.title_pt;
+  const sub   = lang==='es'?s.subtitle_es:s.subtitle_pt;
+  const copy  = lang==='es'?s.copy_es:s.copy_pt;
+  return (
+    <div className="service-card">
+      <img src={s.imageUrl} alt={title} className="service-img" />
+      <div className="service-meta">
+        <div className="service-title">
+          {title} <span className="chip">{s.duration_min} min</span>
+</div>
+>
+
+        <div className="service-sub">{sub}</div>
+        <div className="service-copy">{copy}</div>
+        <div className="price-row"><span>Auto</span><b>Gs. {s.prices.auto.toLocaleString()}</b></div>
+        <div className="price-row"><span>SUV</span><b>Gs. {s.prices.suv.toLocaleString()}</b></div>
+        <div className="price-row"><span>Camioneta</span><b>Gs. {s.prices.camioneta.toLocaleString()}</b></
+        <button className="btn btn-primary" style={{marginTop:10}} onClick={()=>onSelect(s.slug)}>
+          Seleccionar
+        </button>
+      </div>
+</div> );
+}
+3) src/styles/theme.css (trecho essencial)
+.service-card{background:#fff;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.25);overflow:hidden}
+.service-img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
+.service-meta{padding:14px 16px;color:#111}
+.service-title{font-weight:700;font-size:1.05rem;margin-bottom:4px}
+.service-sub{color:#6b7280;margin-bottom:6px}
+.service-copy{color:#374151;margin-bottom:10px;line-height:1.35}
+.chip{display:inline-block;background:#f3f4f6;border-radius:999px;padding:4px 10px;font-size:.8rem;margin-l
+.price-row{display:flex;justify-content:space-between;margin:6px 0}
+4) src/pages/Cliente.tsx (renderizando os cards)
+import data from '../data/services.json';
+import ServiceCard from '../components/ServiceCard';
+export default function ClientePage(){
+  const lang:'es'|'pt' = 'es'; // ou usar seu i18n/toggle
+  function handleSelect(slug:string){
+    // Exemplo: abrir modal de agendamento já com o serviço selecionado
+    console.log('serviço selecionado:', slug);
+}
+  return (
+    <div style={{display:'grid', gap:16}}>
+      {data.map(s => (
+        <ServiceCard key={s.slug} s={s} lang={lang} onSelect={handleSelect}/>
+))} </div>
+); }
+d
+e
