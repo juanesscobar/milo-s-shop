@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/components/Home";
 import ClienteApp from "@/components/ClienteApp";
 import AdminApp from "@/components/AdminApp";
+import TestServices from "@/pages/TestServices";
 
 // Wrapper components for routing
 function HomePage() {
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/cliente" component={ClientePage} />
       <Route path="/admin" component={AdminPage} />
+      <Route path="/test-services" component={TestServices} />
       <Route component={HomePage} /> {/* Fallback to home */}
     </Switch>
   );

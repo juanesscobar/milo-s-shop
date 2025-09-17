@@ -26,9 +26,16 @@ export const vehicles = pgTable("vehicles", {
 // Services table
 export const services = pgTable("services", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: text("slug").notNull().unique(),
   nameKey: text("name_key").notNull().unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
+  titleEs: text("title_es").notNull(),
+  titlePt: text("title_pt").notNull(),
+  subtitleEs: text("subtitle_es").notNull(),
+  subtitlePt: text("subtitle_pt").notNull(),
+  copyEs: text("copy_es").notNull(),
+  copyPt: text("copy_pt").notNull(),
   prices: jsonb("prices").notNull().$type<{auto?: number; suv?: number; camioneta?: number}>(),
   durationMin: integer("duration_min"),
   imageUrl: text("image_url"),
