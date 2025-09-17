@@ -1,0 +1,48 @@
+import BookingCard from '../BookingCard';
+
+export default function BookingCardExample() {
+  const mockBooking = {
+    id: "booking-123",
+    serviceName: "Ducha y aspirado",
+    vehiclePlate: "ABC-1234",
+    date: "2024-03-15",
+    timeSlot: "14:00 - 14:30",
+    status: 'washing' as const,
+    price: 50000,
+    paymentMethod: 'card' as const,
+    paymentStatus: 'paid' as const
+  };
+
+  const handleStatusUpdate = (bookingId: string, newStatus: string) => {
+    console.log('Status updated:', bookingId, newStatus);
+  };
+
+  const handleViewDetails = (bookingId: string) => {
+    console.log('View details:', bookingId);
+  };
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Customer view */}
+      <div>
+        <h3 className="text-sm font-medium mb-2">Vista Cliente</h3>
+        <BookingCard 
+          {...mockBooking}
+          onViewDetails={handleViewDetails}
+        />
+      </div>
+      
+      {/* Admin view */}
+      <div>
+        <h3 className="text-sm font-medium mb-2">Vista Administrador</h3>
+        <BookingCard 
+          {...mockBooking}
+          status="waiting"
+          onStatusUpdate={handleStatusUpdate}
+          onViewDetails={handleViewDetails}
+          isAdmin={true}
+        />
+      </div>
+    </div>
+  );
+}
