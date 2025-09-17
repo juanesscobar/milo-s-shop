@@ -341,7 +341,8 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
           <CardFooter>
             <Button 
               onClick={handleUserSubmit} 
-              className="w-full"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 mx-auto"
               disabled={createUserMutation.isPending}
               data-testid="button-continue-user"
             >
@@ -391,7 +392,8 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
             </Button>
             <Button 
               onClick={handleVehicleSubmit} 
-              className="flex-1"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
               disabled={createVehicleMutation.isPending}
               data-testid="button-continue-vehicle"
             >
@@ -459,7 +461,8 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
             </Button>
             <Button 
               onClick={handleBookingSubmit} 
-              className="flex-1"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
               disabled={createBookingMutation.isPending}
               data-testid="button-confirm-booking"
             >

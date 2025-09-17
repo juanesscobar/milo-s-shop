@@ -92,7 +92,8 @@ export default function ServiceCard({
       <CardFooter>
         <Button 
           onClick={onReserve}
-          className="w-full"
+          size="sm"
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 mx-auto"
           data-testid={`button-reserve-${service.id}`}
         >
           {t.reserve}
