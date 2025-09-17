@@ -10,13 +10,26 @@ import Home from "@/components/Home";
 import ClienteApp from "@/components/ClienteApp";
 import AdminApp from "@/components/AdminApp";
 
+// Wrapper components for routing
+function HomePage() {
+  return <Home language="es" />;
+}
+
+function ClientePage() {
+  return <ClienteApp language="es" />;
+}
+
+function AdminPage() {
+  return <AdminApp language="es" />;
+}
+
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/cliente" component={ClienteApp} />
-      <Route path="/admin" component={AdminApp} />
-      <Route component={Home} /> {/* Fallback to home */}
+      <Route path="/" component={HomePage} />
+      <Route path="/cliente" component={ClientePage} />
+      <Route path="/admin" component={AdminPage} />
+      <Route component={HomePage} /> {/* Fallback to home */}
     </Switch>
   );
 }
