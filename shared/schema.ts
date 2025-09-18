@@ -9,8 +9,10 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   phone: text("phone").notNull().unique(),
   email: text("email"),
-  role: text("role", { enum: ["client", "admin"] }).notNull().default("client"),
+  role: text("role", { enum: ["client", "admin", "operator"] }).notNull().default("client"),
   language: text("language", { enum: ["es", "pt"] }).notNull().default("es"),
+  isGuest: boolean("is_guest").default(true).notNull(),
+  preferences: jsonb("preferences").$type<{favoriteServices?: string[]; preferredTime?: string; notifications?: boolean}>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -78,6 +80,37 @@ export const organization = pgTable("organization", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// OTP tokens table for passwordless authentication
+export const otpTokens = pgTable("otp_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  phone: text("phone").notNull(),
+  code: text("code").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  verified: boolean("verified").default(false).notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Magic links table for booking management
+export const magicLinks = pgTable("magic_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  token: text("token").notNull().unique(),
+  bookingId: varchar("booking_id").notNull().references(() => bookings.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Admin sessions table
+export const adminSessions = pgTable("admin_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  lastActivity: timestamp("last_activity").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Audit log table
 export const auditLog = pgTable("audit_log", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -92,6 +125,23 @@ export const auditLog = pgTable("audit_log", {
 export const usersRelations = relations(users, ({ many }) => ({
   vehicles: many(vehicles),
   bookings: many(bookings),
+  adminSessions: many(adminSessions),
+}));
+
+export const otpTokensRelations = relations(otpTokens, ({ }) => ({}));
+
+export const magicLinksRelations = relations(magicLinks, ({ one }) => ({
+  booking: one(bookings, {
+    fields: [magicLinks.bookingId],
+    references: [bookings.id],
+  }),
+}));
+
+export const adminSessionsRelations = relations(adminSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [adminSessions.userId],
+    references: [users.id],
+  }),
 }));
 
 export const vehiclesRelations = relations(vehicles, ({ one, many }) => ({
@@ -164,6 +214,25 @@ export const insertOrganizationSchema = createInsertSchema(organization).omit({
   updatedAt: true,
 });
 
+export const insertOtpTokenSchema = createInsertSchema(otpTokens).omit({
+  id: true,
+  verified: true,
+  attempts: true,
+  createdAt: true,
+});
+
+export const insertMagicLinkSchema = createInsertSchema(magicLinks).omit({
+  id: true,
+  usedAt: true,
+  createdAt: true,
+});
+
+export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
+  id: true,
+  lastActivity: true,
+  createdAt: true,
+});
+
 export const insertAuditLogSchema = createInsertSchema(auditLog).omit({
   id: true,
   timestamp: true,
@@ -182,5 +251,11 @@ export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type Organization = typeof organization.$inferSelect;
+export type InsertOtpToken = z.infer<typeof insertOtpTokenSchema>;
+export type OtpToken = typeof otpTokens.$inferSelect;
+export type InsertMagicLink = z.infer<typeof insertMagicLinkSchema>;
+export type MagicLink = typeof magicLinks.$inferSelect;
+export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
+export type AdminSession = typeof adminSessions.$inferSelect;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLog.$inferSelect;
