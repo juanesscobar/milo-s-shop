@@ -50,7 +50,7 @@ export default function TestServices() {
               key={service.slug}
               service={service as unknown as Service}
               language={language}
-              onSelect={handleServiceSelect}
+              onReserve={handleServiceSelect}
             />
           ))}
         </div>

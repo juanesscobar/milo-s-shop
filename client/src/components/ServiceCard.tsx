@@ -7,13 +7,13 @@ import type { Service } from "@shared/schema";
 interface ServiceCardProps {
   service: Service;
   language: 'es' | 'pt';
-  onSelect: (slug: string) => void;
+  onReserve: (slug: string) => void;
 }
 
 export default function ServiceCard({ 
   service,
   language,
-  onSelect
+  onReserve
 }: ServiceCardProps) {
   const title = language === 'es' ? service.titleEs : service.titlePt;
   const subtitle = language === 'es' ? service.subtitleEs : service.subtitlePt;
@@ -90,7 +90,7 @@ export default function ServiceCard({
       
       <CardFooter>
         <Button 
-          onClick={() => onSelect(service.slug)}
+          onClick={() => onReserve(service.slug)}
           variant="destructive"
           size="sm"
           className="mx-auto"
