@@ -64,7 +64,7 @@ export default function NewServiceCard({
 
   return (
     <Card 
-      className="w-full hover-elevate transition-all duration-200 hover:shadow-lg hover:shadow-red-500/10 border hover:border-red-200"
+      className="w-full hover-elevate"
       data-testid={`card-service-${service.slug}`}
     >
       <CardHeader className="pb-3">
@@ -117,7 +117,8 @@ export default function NewServiceCard({
         <Button
           onClick={() => onReserve(service.slug)}
           disabled={!selectedVehicleType}
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg disabled:bg-gray-300 disabled:text-gray-500"
+          variant="destructive"
+          className="w-full font-medium py-2.5"
           data-testid={`button-reserve-${service.slug}`}
         >
           {buttonText}

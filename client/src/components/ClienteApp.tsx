@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,9 +10,7 @@ import NewServiceCard from "./NewServiceCard";
 import BookingCard from "./BookingCard";
 import BookingFlow from "./BookingFlow";
 import VehicleSelector from "./VehicleSelector";
-import { ShoppingCart, User, History, Car } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import type { Service } from "@shared/schema";
+import { ShoppingCart, User, History, Car, AlertTriangle } from "lucide-react";
 import servicesData from '../data/services.json';
 
 interface ClienteAppProps {
@@ -54,8 +53,6 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
 
   // Use local services data
   const services = servicesData;
-  const isLoading = false;
-  const error = null;
 
   const mockOrders = [
     {
@@ -221,14 +218,15 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
               </div>
               
               {!selectedVehicleType && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-                  <p className="text-yellow-700 text-sm">
+                <Alert className="bg-background border-border">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-muted-foreground">
                     {currentLanguage === 'es' 
-                      ? '⚠️ Por favor selecciona tu tipo de vehículo primero para ver los precios'
-                      : '⚠️ Por favor selecione o tipo de veículo primeiro para ver os preços'
+                      ? 'Por favor selecciona tu tipo de vehículo primero para ver los precios'
+                      : 'Por favor selecione o tipo de veículo primeiro para ver os preços'
                     }
-                  </p>
-                </div>
+                  </AlertDescription>
+                </Alert>
               )}
               
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
