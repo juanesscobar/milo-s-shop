@@ -12,19 +12,21 @@ export default function Home({ language = 'es' }: HomeProps) {
   const content = {
     es: {
       title: "Milos'Shop",
-      subtitle: "Seleccione cómo desea acceder",
+      welcome: "Bienvenido, tu auto merece lo mejor ■■",
       cliente: "Cliente",
       admin: "Administrador",
       clienteDesc: "Acceso para clientes",
-      adminDesc: "Panel de administración"
+      adminDesc: "Panel de administración",
+      contact: "■ +595 981278517"
     },
     pt: {
       title: "Milos'Shop", 
-      subtitle: "Selecione como deseja acessar",
+      welcome: "Bem-vindo, seu carro merece o melhor ■■",
       cliente: "Cliente",
       admin: "Administrador", 
       clienteDesc: "Acesso para clientes",
-      adminDesc: "Painel de administração"
+      adminDesc: "Painel de administração",
+      contact: "■ +595 981278517"
     }
   };
 
@@ -42,7 +44,7 @@ export default function Home({ language = 'es' }: HomeProps) {
           <LogoSilhouette />
         </div>
         <h1 className="title">{t.title}</h1>
-        <p className="subtitle">{t.subtitle}</p>
+        <p className="welcome">{t.welcome}</p>
       </div>
       
       <section className="panel">
@@ -67,7 +69,7 @@ export default function Home({ language = 'es' }: HomeProps) {
         </button>
       </section>
       
-      <p className="footer-hint">Home — fondo negro, tarjetas con acento rojo, tipografía Inter/Montserrat</p>
+      <footer className="footer-contact">{t.contact}</footer>
     </main>
   );
 }
