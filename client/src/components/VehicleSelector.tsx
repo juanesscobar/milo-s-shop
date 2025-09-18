@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Car, Truck, Caravan } from "lucide-react";
 
 interface VehicleSelectorProps {
@@ -67,6 +67,11 @@ export default function VehicleSelector({ selectedType, onSelect, disabled = fal
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t.chooseVehicle}</DialogTitle>
+            <DialogDescription>
+              {language === 'es' 
+                ? 'Selecciona el tipo de vehículo para continuar' 
+                : 'Selecione o tipo de veículo para continuar'}
+            </DialogDescription>
           </DialogHeader>
           
           <div className="flex flex-col gap-3 py-4">

@@ -8,6 +8,7 @@ import Header from "./Header";
 import ServiceCard from "./ServiceCard";
 import BookingCard from "./BookingCard";
 import BookingFlow from "./BookingFlow";
+import VehicleSelector from "./VehicleSelector";
 import { ShoppingCart, User, History, Car } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Service } from "@shared/schema";
@@ -18,7 +19,7 @@ interface ClienteAppProps {
 
 export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
-  const [selectedVehicleType, setSelectedVehicleType] = useState<'auto' | 'suv' | 'camioneta'>('auto');
+  const [selectedVehicleType, setSelectedVehicleType] = useState<'auto' | 'suv' | 'camioneta' | null>(null);
   const [bookingService, setBookingService] = useState<Service | null>(null);
 
   const content = {
@@ -122,7 +123,7 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
         <div className="container mx-auto px-4 py-6">
           <BookingFlow 
             service={bookingService}
-            selectedVehicleType={selectedVehicleType}
+            selectedVehicleType={selectedVehicleType || 'auto'}
             onBack={handleBackToServices}
             language={currentLanguage}
           />
@@ -166,30 +167,20 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Car className="h-5 w-5" />
-                  {t.vehicleType}
+                  {currentLanguage === 'es' ? 'Paso 1: Selecciona tu vehículo' : 'Passo 1: Selecione seu veículo'}
                 </CardTitle>
-                <CardDescription>{t.selectVehicle}</CardDescription>
+                <CardDescription>
+                  {currentLanguage === 'es' 
+                    ? 'Elige el tipo de vehículo para ver los precios correspondientes' 
+                    : 'Escolha o tipo de veículo para ver os preços correspondentes'}
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Select value={selectedVehicleType} onValueChange={(value: 'auto' | 'suv' | 'camioneta') => setSelectedVehicleType(value)}>
-                  <SelectTrigger data-testid="select-vehicle-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">{t.auto}</SelectItem>
-                    <SelectItem value="suv">{t.suv}</SelectItem>
-                    <SelectItem value="camioneta">{t.camioneta}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex justify-center pt-2">
-                  <Button 
-                    variant="secondary"
-                    size="sm"
-                    data-testid="button-click-here-vehicle"
-                  >
-                    {currentLanguage === 'es' ? 'Click aquí' : 'Clique aqui'}
-                  </Button>
-                </div>
+              <CardContent>
+                <VehicleSelector
+                  selectedType={selectedVehicleType}
+                  onSelect={setSelectedVehicleType}
+                  language={currentLanguage}
+                />
               </CardContent>
             </Card>
 
