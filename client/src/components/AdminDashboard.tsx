@@ -19,13 +19,17 @@ interface AdminDashboardProps {
   todayBookings: any[];
   onStatusUpdate: (bookingId: string, newStatus: string) => void;
   onViewDetails: (bookingId: string) => void;
+  onRefresh?: () => void;
+  isLoading?: boolean;
 }
 
 export default function AdminDashboard({ 
   stats, 
   todayBookings, 
   onStatusUpdate, 
-  onViewDetails 
+  onViewDetails,
+  onRefresh,
+  isLoading = false
 }: AdminDashboardProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-PY', {
@@ -79,9 +83,14 @@ export default function AdminDashboard({
             Resumen del día - {new Date().toLocaleDateString('es-ES')}
           </p>
         </div>
-        <Button variant="outline" data-testid="button-refresh-dashboard">
+        <Button 
+          variant="outline" 
+          data-testid="button-refresh-dashboard"
+          onClick={onRefresh}
+          disabled={isLoading}
+        >
           <TrendingUp className="h-4 w-4 mr-2" />
-          Actualizar
+          {isLoading ? 'Actualizando...' : 'Actualizar'}
         </Button>
       </div>
 
