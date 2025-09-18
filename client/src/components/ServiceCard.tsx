@@ -93,21 +93,15 @@ export default function ServiceCard({
         </div>
       </CardContent>
       
-      <CardFooter className="flex gap-2 justify-center">
+      <CardFooter>
         <Button 
           onClick={() => onReserve(service.slug)}
           variant="outline"
           size="sm"
+          className="mx-auto"
           data-testid={`button-select-${service.slug}`}
         >
           {buttonText}
-        </Button>
-        <Button 
-          variant="secondary"
-          size="sm"
-          data-testid={`button-click-here-${service.slug}`}
-        >
-          {language === 'es' ? 'Click aquí' : 'Clique aqui'}
         </Button>
       </CardFooter>
     </Card>
