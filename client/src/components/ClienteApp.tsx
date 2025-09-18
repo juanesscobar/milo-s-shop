@@ -148,7 +148,7 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                 </CardTitle>
                 <CardDescription>{t.selectVehicle}</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <Select value={selectedVehicleType} onValueChange={(value: 'auto' | 'suv' | 'camioneta') => setSelectedVehicleType(value)}>
                   <SelectTrigger data-testid="select-vehicle-type">
                     <SelectValue />
@@ -159,6 +159,15 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                     <SelectItem value="camioneta">{t.camioneta}</SelectItem>
                   </SelectContent>
                 </Select>
+                <div className="flex justify-center pt-2">
+                  <Button 
+                    variant="secondary"
+                    size="sm"
+                    data-testid="button-click-here-vehicle"
+                  >
+                    {currentLanguage === 'es' ? 'Click aquí' : 'Clique aqui'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
