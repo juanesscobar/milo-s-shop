@@ -33,7 +33,7 @@ const getVehicleTypes = (language: 'es' | 'pt') => [
 
 const getTranslations = (language: 'es' | 'pt') => ({
   vehicleType: language === 'es' ? 'Tipo de vehículo' : 'Tipo de veículo',
-  clickHere: language === 'es' ? 'Click aquí' : 'Clique aqui',
+  clickHere: language === 'es' ? 'Seleccionar vehículo' : 'Selecionar veículo',
   chooseVehicle: language === 'es' ? 'Elige tu vehículo' : 'Escolha seu veículo',
   cancel: language === 'es' ? 'Cancelar' : 'Cancelar',
   selectVehicle: language === 'es' ? 'Selecciona tu vehículo' : 'Selecione seu veículo',
@@ -56,7 +56,7 @@ export default function VehicleSelector({ selectedType, onSelect, disabled = fal
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+            className="w-full bg-destructive hover:bg-destructive/90 text-destructive-foreground py-3 px-6 text-base font-medium rounded-lg"
             disabled={disabled}
             data-testid="button-vehicle-selector"
           >
