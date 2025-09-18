@@ -8,7 +8,7 @@
   --accent:#E10600;
   --radius:14px;
   --shadow:0 10px 30px rgba(0,0,0,.45);
-  --safe: env(safe-area-inset-bottom, 16px);
+  --safe: env(safe-area-inset-bottom, 20px);
 }
 
 html,body,#root{height:100%}
@@ -30,101 +30,103 @@ body{
   padding-bottom: calc(24px + var(--safe));
 }
 
-.brand {
-  margin: 48px 0 24px;
+.brand{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin:40px 0 22px;
 }
 
-.brand img {
-  height: 96px;
-  width: 96px;
-  border: 2px solid #fff;
-  border-radius: 999px;
-  margin-bottom: 16px;
+.logo-ring{
+  height:96px;
+  width:96px;
+  border:2px solid #fff;
+  border-radius:999px;
+  display:grid;
+  place-items:center;
+  margin-bottom:16px;
 }
 
-.brand h1 {
-  font-weight: 800;
-  font-size: 32px;
-  margin: 0;
-  letter-spacing: .5px;
-  color: var(--text-on-dark);
+.logo-svg{
+  width:60px;
+  height:24px;
+  opacity:.95;
 }
 
-.welcome {
-  margin: .6rem 0 1.4rem;
-  font-size: 16px;
-  text-align: center;
-  color: var(--muted);
+.title{
+  font-weight:800;
+  font-size:32px;
+  margin:0;
+  letter-spacing:.5px;
 }
 
-.emoji {
+.welcome{
+  color:var(--muted);
+  margin:.55rem 0 1.1rem;
+  font-size:16px;
+  text-align:center;
+}
+
+.emoji{
   font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",emoji;
 }
 
-.btn-card {
-  padding: 22px 22px;
-  border-radius: 16px;
-  margin: 12px 0;
-  transition: transform 0.1s;
-  display: block;
-  width: 100%;
-  text-align: left;
-  text-decoration: none;
-  border: 2px solid transparent;
-  cursor: pointer;
-  background: #fff;
-  border: 2px solid #E5E7EB;
-  color: #111;
+.panel{
+  background:var(--card);
+  color:#111;
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  max-width:560px;
+  width:90%;
+  padding:20px;
 }
 
-.btn-card.primary {
-  background: #E10600 !important;
-  color: #fff;
-  box-shadow: 0 10px 24px rgba(225,6,0,.25);
+/* 3) Card e botões */
+.panel .btn-card{
+  display:block;
+  width:100%;
+  text-align:left;
+  border-radius:12px;
+  padding:18px 20px;
+  margin:10px 0;
+  transition:all .2s ease;
+  text-decoration:none;
+  border:2px solid #E5E7EB;
+  cursor:pointer;
+  background:#fff;
+  color:#111;
 }
 
-.btn-card.primary:active {
-  transform: translateY(1px);
+.panel .btn-card:hover{
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(225,6,0,.1);
 }
 
-.btn-card h2 {
-  font-weight: 700;
-  font-size: 1.05rem;
-  margin: 0;
+.btn-title{
+  font-weight:700;
+  font-size:1.05rem;
+  margin:0;
 }
 
-.btn-sub {
-  color: #8B93A1;
-  font-size: .95rem;
-  margin-top: 4px;
+.btn-sub{
+  color:var(--muted-2);
+  font-size:.95rem;
+  margin-top:4px;
 }
 
-.btn-card:focus {
-  outline: 3px solid rgba(225,6,0,.35);
-  outline-offset: 2px;
+/* 4) Telefone em footer simples */
+.contact{
+  margin-top:24px;
+  text-align:center;
+  padding:12px 0;
 }
 
-.panel {
-  box-shadow: 0 16px 48px rgba(0,0,0,.45);
-  padding: 24px;
-  border-radius: 20px;
-  background: #111;
-  max-width: 560px;
-  width: 90%;
+.contact a{
+  color:var(--muted);
+  text-decoration:none;
+  font-size:.95rem;
 }
 
-.contact-inline {
-  border-top: 1px dashed #e5e7eb;
-  margin-top: 12px;
-  padding-top: 12px;
-  text-align: center;
-}
-
-.contact-inline a {
-  color: #6B7280;
-  text-decoration: none;
-}
-
-.contact-inline a:hover {
-  color: #E10600;
+.contact a:hover{
+  color:var(--accent);
 }

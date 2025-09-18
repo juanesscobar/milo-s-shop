@@ -39,34 +39,41 @@ export default function Home({ language = 'es' }: HomeProps) {
 
   return (
     <main className="home">
-      <div className="panel">
-        <div className="brand">
-          <img src="/logo.png" alt="Milos'Shop Logo" />
-          <h1>Milos'Shop</h1>
-          <p className="welcome emoji">Bienvenido, tu auto merece lo mejor 🚗💨</p>
+      <div className="brand">
+        <div className="logo-ring">
+          <LogoSilhouette />
         </div>
+        <h1 className="title">{t.title}</h1>
+        <p className="welcome">
+          {t.welcome.split(' 🚗💨')[0]} <span className="emoji">🚗💨</span>
+        </p>
+      </div>
+      
+      <section className="panel">
         <button 
-          className="btn-card primary" 
+          className="btn-card" 
           onClick={() => handleNavigation('/cliente')}
           aria-label={t.clienteDesc}
           data-testid="button-cliente"
         >
-          <h2>Cliente</h2>
-          <p className="btn-sub">Acceso para clientes</p>
+          <div className="btn-title">{t.cliente}</div>
+          <div className="btn-sub">{t.clienteDesc}</div>
         </button>
+        
         <button 
           className="btn-card" 
           onClick={() => handleNavigation('/admin')}
           aria-label={t.adminDesc}
           data-testid="button-admin"
         >
-          <h2>Administrador</h2>
-          <p className="btn-sub">Panel de administración</p>
+          <div className="btn-title">{t.admin}</div>
+          <div className="btn-sub">{t.adminDesc}</div>
         </button>
-        <div className="contact-inline">
-          <a href="tel:+595981278517">📞 +595 981278517</a>
-        </div>
-      </div>
+      </section>
+      
+      <footer className="contact">
+        <a href="tel:+595981278517">{t.contact}</a>
+      </footer>
     </main>
   );
 }
