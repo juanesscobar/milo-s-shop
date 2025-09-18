@@ -12,7 +12,7 @@
 html,body,#root{height:100%}
 
 .home{
-  background:var(--bg);
+  background:linear-gradient(180deg,#000 0%,#111 100%);
   min-height:100vh;
   color:var(--text-on-dark);
   display:flex;
@@ -49,12 +49,14 @@ html,body,#root{height:100%}
   font-weight:800;
   font-size:32px;
   margin:0;
+  letter-spacing:1px;
 }
 
-.subtitle{
+.welcome{
   color:var(--muted);
-  margin:.35rem 0 1.2rem;
+  margin:.6rem 0 1.2rem;
   font-size:16px;
+  text-align:center;
 }
 
 .panel{
@@ -113,9 +115,10 @@ html,body,#root{height:100%}
   margin-top:4px;
 }
 
-.footer-hint{
+.footer-contact{
   color:#9CA3AF;
-  font-size:12px;
-  margin-top:18px;
+  font-size:13px;
+  margin-top:auto;
   text-align:center;
+  padding-top:20px;
 }
