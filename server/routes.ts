@@ -328,8 +328,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
     
-    // Join admin room for real-time updates
-    socket.on('join-admin', () => {
+    // Join admin room for real-time updates (with basic auth)
+    socket.on('join-admin', (authToken) => {
+      // Basic admin auth - in production, use proper JWT or session validation
+      const adminToken = process.env.ADMIN_WS_TOKEN || 'admin-secret-key';
+      
+      if (authToken !== adminToken) {
+        console.log('Unauthorized admin access attempt:', socket.id);
+        socket.emit('auth-error', 'Invalid admin token');
+        return;
+      }
+      
       console.log('Admin joined:', socket.id);
       adminSockets.add(socket);
       socket.join('admin');

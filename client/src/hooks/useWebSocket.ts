@@ -75,7 +75,19 @@ export function useWebSocket() {
   const joinAdminRoom = () => {
     if (socketRef.current) {
       socketRef.current.connect();
-      socketRef.current.emit('join-admin');
+      // Send admin token for authentication
+      const adminToken = import.meta.env.VITE_ADMIN_WS_TOKEN || 'admin-secret-key';
+      socketRef.current.emit('join-admin', adminToken);
+      
+      // Handle auth errors
+      socketRef.current.on('auth-error', (message) => {
+        console.error('Admin WebSocket auth error:', message);
+        toast({
+          title: "⚠️ Error de Autenticación",
+          description: "No autorizado para recibir actualizaciones de admin",
+          variant: "destructive",
+        });
+      });
     }
   };
 
