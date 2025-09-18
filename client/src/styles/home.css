@@ -94,13 +94,15 @@ body{
   cursor:pointer;
 }
 
-.panel .btn-card.primary{
-  background:var(--accent) !important;
+.home .panel .btn-card.primary,
+.home .panel button.btn-card.primary{
+  background:#E10600 !important;
   color:#fff !important;
-  border:2px solid var(--accent) !important;
+  border:2px solid #E10600 !important;
 }
 
-.panel .btn-card.primary:hover{
+.home .panel .btn-card.primary:hover,
+.home .panel button.btn-card.primary:hover{
   filter:brightness(.95);
   box-shadow:0 0 0 4px rgba(225,6,0,.14);
 }

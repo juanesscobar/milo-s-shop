@@ -12,21 +12,21 @@ export default function Home({ language = 'es' }: HomeProps) {
   const content = {
     es: {
       title: "Milos'Shop",
-      welcome: "Bienvenido, tu auto merece lo mejor ■■",
+      welcome: "Bienvenido, tu auto merece lo mejor 🚗💨",
       cliente: "Cliente",
       admin: "Administrador",
       clienteDesc: "Acceso para clientes",
       adminDesc: "Panel de administración",
-      contact: "■ +595 981278517"
+      contact: "📞 +595 981278517"
     },
     pt: {
       title: "Milos'Shop", 
-      welcome: "Bem-vindo, seu carro merece o melhor ■■",
+      welcome: "Bem-vindo, seu carro merece o melhor 🚗💨",
       cliente: "Cliente",
       admin: "Administrador", 
       clienteDesc: "Acesso para clientes",
       adminDesc: "Painel de administração",
-      contact: "■ +595 981278517"
+      contact: "📞 +595 981278517"
     }
   };
 
@@ -45,7 +45,7 @@ export default function Home({ language = 'es' }: HomeProps) {
         </div>
         <h1 className="title">{t.title}</h1>
         <p className="welcome">
-          Bienvenido, tu auto merece lo mejor <span className="emoji">■■</span>
+          {t.welcome.split(' 🚗💨')[0]} <span className="emoji">🚗💨</span>
         </p>
       </div>
       
@@ -72,7 +72,7 @@ export default function Home({ language = 'es' }: HomeProps) {
         
         {/* Telefone visível e seguro dentro do card */}
         <div className="contact-inline">
-          ■ +595 981278517
+          📞 +595 981278517
         </div>
       </section>
     </main>
