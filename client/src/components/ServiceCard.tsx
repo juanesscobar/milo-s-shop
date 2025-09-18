@@ -1,22 +1,25 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ImagePlus } from "lucide-react";
+import { Clock, ImagePlus, Image } from "lucide-react";
+import { useRef, useState } from 'react';
 import type { Service } from "@shared/schema";
 
 interface ServiceCardProps {
   service: Service;
   language: 'es' | 'pt';
   onReserve: (slug: string) => void;
-  onGenerateImage?: (slug: string) => void;
+  onUploadImage?: (slug: string, file: File) => void;
 }
 
 export default function ServiceCard({ 
   service,
   language,
   onReserve,
-  onGenerateImage
+  onUploadImage
 }: ServiceCardProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const title = language === 'es' ? service.titleEs : service.titlePt;
   const subtitle = language === 'es' ? service.subtitleEs : service.subtitlePt;
   const copy = language === 'es' ? service.copyEs : service.copyPt;
@@ -36,23 +39,71 @@ export default function ServiceCard({
 
   const t = vehicleNames[language];
   const buttonText = language === 'es' ? 'Seleccionar' : 'Selecionar';
+  
+  const handleImageUpload = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Call upload function
+      onUploadImage?.(service.slug, file);
+    }
+  };
 
   return (
     <Card className="w-full hover-elevate" data-testid={`card-service-${service.slug}`}>
-      {/* Área para gerar imagem manualmente */}
+      {/* Área para agregar imagem da galeria */}
       <div className="p-3 pb-0">
-        <div className="w-full h-40 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-muted-foreground/25">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onGenerateImage?.(service.slug)}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-            data-testid={`button-generate-image-${service.slug}`}
-          >
-            <ImagePlus className="h-4 w-4" />
-            {language === 'es' ? 'Generar Imagen' : 'Gerar Imagem'}
-          </Button>
+        <div className="w-full h-40 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-muted-foreground/25 relative overflow-hidden">
+          {previewImage ? (
+            <div className="relative w-full h-full">
+              <img 
+                src={previewImage} 
+                alt={`Preview ${title}`}
+                className="w-full h-full object-cover rounded-md"
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleImageUpload}
+                className="absolute bottom-2 right-2 h-8 w-8 p-1"
+                data-testid={`button-change-image-${service.slug}`}
+              >
+                <Image className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleImageUpload}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              data-testid={`button-upload-image-${service.slug}`}
+            >
+              <ImagePlus className="h-4 w-4" />
+              {language === 'es' ? 'Agregar Imagen' : 'Adicionar Imagem'}
+            </Button>
+          )}
         </div>
+        
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="hidden"
+          data-testid={`input-file-${service.slug}`}
+        />
       </div>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">

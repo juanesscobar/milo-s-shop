@@ -78,10 +78,32 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
     setBookingService(null);
   };
 
-  const handleGenerateImage = (serviceSlug: string) => {
-    console.log('Gerar imagem para serviço:', serviceSlug);
-    // TODO: Implementar lógica de geração de imagem
-    alert(`Geração de imagem para serviço: ${serviceSlug}`);
+  const handleUploadImage = async (serviceSlug: string, file: File) => {
+    console.log('Upload de imagem para serviço:', serviceSlug, file.name);
+    
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('serviceSlug', serviceSlug);
+      
+      const response = await fetch('/api/services/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Imagem carregada com sucesso:', result);
+        // Refresh services to get updated data
+        // queryClient.invalidateQueries({ queryKey: ['/api/services'] });
+      } else {
+        console.error('Erro ao carregar imagem');
+        alert('Erro ao carregar imagem. Tente novamente.');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      alert('Erro ao carregar imagem. Verifique sua conexão.');
+    }
   };
 
   const handleOrderDetails = (orderId: string) => {
@@ -198,7 +220,7 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                         key={service.id}
                         service={service}
                         onReserve={(slug) => handleServiceReserve(service)}
-                        onGenerateImage={handleGenerateImage}
+                        onUploadImage={handleUploadImage}
                         language={currentLanguage}
                       />
                     ))}

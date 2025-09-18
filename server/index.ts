@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from 'path';
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -38,6 +39,10 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Serve static files from attached_assets directory
+  const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
+  app.use('/attached_assets', express.static(attachedAssetsPath));
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

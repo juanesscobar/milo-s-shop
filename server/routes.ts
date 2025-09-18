@@ -1,5 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 import { storage } from "./storage";
 import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, insertPaymentSchema } from "@shared/schema";
 import { z } from "zod";
@@ -215,6 +218,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating payment status:", error);
       res.status(500).json({ error: "Failed to update payment status" });
+    }
+  });
+
+  // Configure multer for file uploads
+  const uploadDir = path.join(process.cwd(), 'attached_assets', 'service_images');
+  
+  // Ensure upload directory exists
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: uploadDir,
+      filename: (req, file, cb) => {
+        // Sanitize serviceSlug to prevent path traversal
+        const rawServiceSlug = req.body.serviceSlug || 'unknown';
+        const serviceSlug = rawServiceSlug.replace(/[^a-z0-9-_]/gi, '_');
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname);
+        cb(null, `${serviceSlug}-${timestamp}${ext}`);
+      }
+    }),
+    fileFilter: (req, file, cb) => {
+      // Accept only images
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(null, false);
+      }
+    },
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+  });
+  
+  // Service image upload route
+  app.post('/api/services/upload-image', upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No image file uploaded' });
+      }
+      
+      const { serviceSlug } = req.body;
+      if (!serviceSlug) {
+        return res.status(400).json({ error: 'Service slug is required' });
+      }
+      
+      // Store image path relative to attached_assets
+      const imagePath = `service_images/${req.file.filename}`;
+      
+      // TODO: Update service record with image path if needed
+      // For now, just return success with file info
+      
+      res.json({
+        success: true,
+        message: 'Image uploaded successfully',
+        imageUrl: `/attached_assets/${imagePath}`,
+        filename: req.file.filename,
+        serviceSlug
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      res.status(500).json({ error: 'Failed to upload image' });
     }
   });
 
