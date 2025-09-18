@@ -11,6 +11,11 @@ export default function TestServices() {
     alert(`Serviço selecionado: ${slug}`);
   };
 
+  const handleGenerateImage = (slug: string) => {
+    console.log('Gerar imagem para:', slug);
+    alert(`Gerar imagem para: ${slug}`);
+  };
+
   const handleLanguageToggle = () => {
     setLanguage(current => current === 'es' ? 'pt' : 'es');
   };
@@ -51,6 +56,7 @@ export default function TestServices() {
               service={service as unknown as Service}
               language={language}
               onReserve={handleServiceSelect}
+              onGenerateImage={handleGenerateImage}
             />
           ))}
         </div>

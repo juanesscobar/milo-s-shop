@@ -78,6 +78,12 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
     setBookingService(null);
   };
 
+  const handleGenerateImage = (serviceSlug: string) => {
+    console.log('Gerar imagem para serviço:', serviceSlug);
+    // TODO: Implementar lógica de geração de imagem
+    alert(`Geração de imagem para serviço: ${serviceSlug}`);
+  };
+
   const handleOrderDetails = (orderId: string) => {
     console.log('View order details:', orderId);
   };
@@ -182,8 +188,8 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                       <ServiceCard
                         key={service.id}
                         service={service}
-                        selectedVehicleType={selectedVehicleType}
                         onReserve={() => handleServiceReserve(service)}
+                        onGenerateImage={handleGenerateImage}
                         language={currentLanguage}
                       />
                     ))}
