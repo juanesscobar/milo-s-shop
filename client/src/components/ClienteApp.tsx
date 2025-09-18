@@ -10,7 +10,9 @@ import NewServiceCard from "./NewServiceCard";
 import BookingCard from "./BookingCard";
 import BookingFlow from "./BookingFlow";
 import VehicleSelector from "./VehicleSelector";
-import { ShoppingCart, User, History, Car, AlertTriangle } from "lucide-react";
+import ClientAuth from "./ClientAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { ShoppingCart, User, History, Car, AlertTriangle, LogOut, Phone, Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Service, Booking } from "@shared/schema";
 
@@ -22,6 +24,15 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
   const [selectedVehicleType, setSelectedVehicleType] = useState<'auto' | 'suv' | 'camioneta' | null>(null);
   const [bookingService, setBookingService] = useState<any | null>(null);
+  
+  // Authentication
+  const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
+
+  // Authentication callback
+  const handleAuthSuccess = (authenticatedUser: any) => {
+    // The useAuth hook will automatically update and re-render the component
+    console.log('User authenticated:', authenticatedUser.name);
+  };
 
   const content = {
     es: {
@@ -34,7 +45,10 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
       selectVehicle: "Selecciona tu vehículo",
       auto: "Auto",
       suv: "SUV",
-      camioneta: "Camioneta"
+      camioneta: "Camioneta",
+      welcome: "Bienvenido",
+      logout: "Cerrar sesión",
+      accountInfo: "Información de cuenta"
     },
     pt: {
       title: "Milos'Shop Cliente",
@@ -46,7 +60,10 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
       selectVehicle: "Selecione seu veículo",
       auto: "Auto",
       suv: "SUV",
-      camioneta: "Caminhonete"
+      camioneta: "Caminhonete",
+      welcome: "Bem-vindo",
+      logout: "Sair",
+      accountInfo: "Informações da conta"
     }
   };
 
@@ -106,6 +123,23 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   const handleOrderDetails = (orderId: string) => {
     console.log('View order details:', orderId);
   };
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-muted-foreground">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication screen if not authenticated
+  if (!isAuthenticated) {
+    return <ClientAuth onAuthSuccess={handleAuthSuccess} currentLanguage={currentLanguage} />;
+  }
 
   // Show booking flow if service is selected
   if (bookingService) {
@@ -283,33 +317,58 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
           <TabsContent value="profile" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>{t.profile}</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  {t.accountInfo}
+                </CardTitle>
                 <CardDescription>
-                  {currentLanguage === 'es' 
-                    ? 'Información de tu cuenta'
-                    : 'Informações da sua conta'
-                  }
+                  {t.welcome}, {user?.name || 'Cliente'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">
-                      {currentLanguage === 'es' ? 'Nombre' : 'Nome'}
-                    </label>
-                    <p className="text-muted-foreground">Cliente Milos'Shop</p>
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <label className="text-sm font-medium">
+                        {currentLanguage === 'es' ? 'Nombre' : 'Nome'}
+                      </label>
+                      <p className="text-muted-foreground">{user?.name}</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">Email</label>
-                    <p className="text-muted-foreground">cliente@milosshop.com</p>
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <label className="text-sm font-medium">
+                        {currentLanguage === 'es' ? 'Teléfono' : 'Telefone'}
+                      </label>
+                      <p className="text-muted-foreground">{user?.phone}</p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium">
-                      {currentLanguage === 'es' ? 'Estado' : 'Status'}
-                    </label>
-                    <Badge variant="outline" className="ml-2">
-                      {currentLanguage === 'es' ? 'Activo' : 'Ativo'}
+                  {user?.email && (
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <label className="text-sm font-medium">Email</label>
+                        <p className="text-muted-foreground">{user?.email}</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" className="ml-1">
+                      {currentLanguage === 'es' ? 'Cliente Activo' : 'Cliente Ativo'}
                     </Badge>
+                  </div>
+                  <div className="pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={() => logout()}
+                      className="w-full"
+                      data-testid="button-logout"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      {t.logout}
+                    </Button>
                   </div>
                 </div>
               </CardContent>

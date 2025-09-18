@@ -68,6 +68,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Client Authentication API
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { name, phone, email } = req.body;
+      
+      if (!name || !phone) {
+        return res.status(400).json({ error: "Name and phone are required" });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByPhone(phone);
+      if (existingUser) {
+        return res.status(409).json({ error: "User with this phone already exists" });
+      }
+
+      // Create new client user
+      const userData = {
+        name,
+        phone,
+        email: email || null,
+        role: 'client' as const,
+        isGuest: false
+      };
+
+      const user = await storage.createUser(userData);
+      
+      // Create session
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+
+      // Return user without sensitive data
+      const { ...userResponse } = user;
+      res.status(201).json({ user: userResponse, message: "User registered successfully" });
+    } catch (error) {
+      console.error("Error registering user:", error);
+      res.status(500).json({ error: "Failed to register user" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { phone, email } = req.body;
+
+      if (!phone && !email) {
+        return res.status(400).json({ error: "Phone or email is required" });
+      }
+
+      // Find user by phone or email
+      let user;
+      if (phone) {
+        user = await storage.getUserByPhone(phone);
+      }
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Create session
+      req.session.userId = user.id;
+      req.session.userRole = user.role;
+
+      // Return user without sensitive data
+      const { ...userResponse } = user;
+      res.json({ user: userResponse, message: "Login successful" });
+    } catch (error) {
+      console.error("Error logging in user:", error);
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({ error: "Failed to logout" });
+        }
+        res.json({ message: "Logout successful" });
+      });
+    } catch (error) {
+      console.error("Error logging out:", error);
+      res.status(500).json({ error: "Failed to logout" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const { ...userResponse } = user;
+      res.json({ user: userResponse });
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+      res.status(500).json({ error: "Failed to fetch user data" });
+    }
+  });
+
   // Vehicles API
   app.get("/api/users/:userId/vehicles", async (req, res) => {
     try {
@@ -93,11 +196,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Bookings API
+  // Bookings API - Protected for authenticated users
   app.get("/api/bookings", async (req, res) => {
     try {
-      const bookings = await storage.getTodayBookings();
-      res.json(bookings);
+      // Check authentication
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // If admin, return all today's bookings
+      if (req.session.userRole === 'admin' || req.session.userRole === 'operator') {
+        const bookings = await storage.getTodayBookings();
+        return res.json(bookings);
+      }
+
+      // If client, return only their bookings
+      const userBookings = await storage.getUserBookings(req.session.userId);
+      res.json(userBookings);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       res.status(500).json({ error: "Failed to fetch bookings" });
