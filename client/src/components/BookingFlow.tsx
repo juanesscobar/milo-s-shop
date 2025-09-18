@@ -375,7 +375,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
             <div>
               <Label htmlFor="vehicleType">{t.vehicleType}</Label>
               <Select value={vehicleForm.type} onValueChange={(value: 'auto' | 'suv' | 'camioneta') => setVehicleForm({...vehicleForm, type: value})}>
-                <SelectTrigger className="bg-white border-gray-300 text-gray-900" data-testid="select-vehicle-type-booking">
+                <SelectTrigger data-testid="select-vehicle-type-booking">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -427,7 +427,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
             <div>
               <Label htmlFor="timeSlot">{t.time}</Label>
               <Select value={bookingData.timeSlot} onValueChange={(value) => setBookingData({...bookingData, timeSlot: value})}>
-                <SelectTrigger className="bg-white border-gray-300 text-gray-900" data-testid="select-time-slot">
+                <SelectTrigger data-testid="select-time-slot">
                   <SelectValue placeholder="Selecciona una hora" />
                 </SelectTrigger>
                 <SelectContent>

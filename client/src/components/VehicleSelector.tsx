@@ -56,8 +56,8 @@ export default function VehicleSelector({ selectedType, onSelect, disabled = fal
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            variant="outline"
-            className="w-full py-3 px-6 text-base font-medium bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
+            variant="destructive"
+            className="w-full py-3 px-6 text-base font-medium"
             disabled={disabled}
             data-testid="button-vehicle-selector"
           >
@@ -82,7 +82,7 @@ export default function VehicleSelector({ selectedType, onSelect, disabled = fal
                 <Button
                   key={vehicle.id}
                   variant="outline"
-                  className="justify-start h-auto p-4 hover-elevate bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
+                  className="justify-start h-auto p-4 hover-elevate"
                   onClick={() => {
                     onSelect(vehicle.id);
                     setOpen(false);
@@ -106,8 +106,7 @@ export default function VehicleSelector({ selectedType, onSelect, disabled = fal
           </div>
           
           <Button
-            variant="outline"
-            className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
+            variant="secondary"
             onClick={() => setOpen(false)}
             data-testid="button-cancel-vehicle"
           >
