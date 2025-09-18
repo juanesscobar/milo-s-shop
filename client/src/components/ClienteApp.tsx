@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Header from "./Header";
-import ServiceCard from "./ServiceCard";
+import NewServiceCard from "./NewServiceCard";
 import BookingCard from "./BookingCard";
 import BookingFlow from "./BookingFlow";
 import VehicleSelector from "./VehicleSelector";
 import { ShoppingCart, User, History, Car } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Service } from "@shared/schema";
+import servicesData from '../data/services.json';
 
 interface ClienteAppProps {
   language?: 'es' | 'pt';
@@ -20,7 +21,7 @@ interface ClienteAppProps {
 export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
   const [selectedVehicleType, setSelectedVehicleType] = useState<'auto' | 'suv' | 'camioneta' | null>(null);
-  const [bookingService, setBookingService] = useState<Service | null>(null);
+  const [bookingService, setBookingService] = useState<any | null>(null);
 
   const content = {
     es: {
@@ -51,11 +52,10 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
 
   const t = content[currentLanguage];
 
-  // Fetch services from API
-  const { data: services = [], isLoading, error } = useQuery<Service[]>({
-    queryKey: ['/api/services'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  // Use local services data
+  const services = servicesData;
+  const isLoading = false;
+  const error = null;
 
   const mockOrders = [
     {
@@ -71,8 +71,30 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
     }
   ];
 
-  const handleServiceReserve = (service: Service) => {
-    setBookingService(service);
+  const handleServiceReserve = (serviceSlug: string) => {
+    const service = services.find(s => s.slug === serviceSlug);
+    if (service) {
+      // Convert service data to match expected format
+      const convertedService = {
+        id: service.slug,
+        slug: service.slug,
+        nameKey: service.slug,
+        title: currentLanguage === 'es' ? service.titleEs : service.titlePt,
+        description: currentLanguage === 'es' ? service.subtitleEs : service.subtitlePt,
+        titleEs: service.titleEs,
+        titlePt: service.titlePt,
+        subtitleEs: service.subtitleEs,
+        subtitlePt: service.subtitlePt,
+        copyEs: service.copyEs,
+        copyPt: service.copyPt,
+        prices: service.prices,
+        durationMin: service.durationMin,
+        imageUrl: service.imageUrl,
+        active: true,
+        createdAt: new Date().toISOString()
+      };
+      setBookingService(convertedService);
+    }
   };
   
   const handleBackToServices = () => {
@@ -185,40 +207,42 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
             </Card>
 
             {/* Services Grid */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t.services}</CardTitle>
-                <CardDescription>
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-bold text-foreground">
+                  {currentLanguage === 'es' ? 'Paso 2: Selecciona tu servicio' : 'Passo 2: Selecione seu serviço'}
+                </h2>
+                <p className="text-gray-400">
                   {currentLanguage === 'es' 
-                    ? 'Selecciona el servicio que deseas reservar'
-                    : 'Selecione o serviço que deseja reservar'
+                    ? 'Elige el servicio que mejor se adapte a tus necesidades'
+                    : 'Escolha o serviço que melhor se adapta às suas necessidades'
                   }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    {currentLanguage === 'es' ? 'Cargando servicios...' : 'Carregando serviços...'}
-                  </div>
-                ) : error ? (
-                  <div className="text-center py-8 text-red-500">
-                    {currentLanguage === 'es' ? 'Error al cargar servicios' : 'Erro ao carregar serviços'}
-                  </div>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {services.map((service) => (
-                      <ServiceCard
-                        key={service.id}
-                        service={service}
-                        onReserve={(slug) => handleServiceReserve(service)}
-                        onUploadImage={handleUploadImage}
-                        language={currentLanguage}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </p>
+              </div>
+              
+              {!selectedVehicleType && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                  <p className="text-yellow-700 text-sm">
+                    {currentLanguage === 'es' 
+                      ? '⚠️ Por favor selecciona tu tipo de vehículo primero para ver los precios'
+                      : '⚠️ Por favor selecione o tipo de veículo primeiro para ver os preços'
+                    }
+                  </p>
+                </div>
+              )}
+              
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {services.map((service) => (
+                  <NewServiceCard
+                    key={service.slug}
+                    service={service}
+                    selectedVehicleType={selectedVehicleType}
+                    language={currentLanguage}
+                    onReserve={handleServiceReserve}
+                  />
+                ))}
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-4">
