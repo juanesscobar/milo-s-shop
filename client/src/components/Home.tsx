@@ -44,7 +44,9 @@ export default function Home({ language = 'es' }: HomeProps) {
           <LogoSilhouette />
         </div>
         <h1 className="title">{t.title}</h1>
-        <p className="welcome">{t.welcome}</p>
+        <p className="welcome">
+          Bienvenido, tu auto merece lo mejor <span className="emoji">■■</span>
+        </p>
       </div>
       
       <section className="panel">
@@ -67,9 +69,12 @@ export default function Home({ language = 'es' }: HomeProps) {
           <div className="btn-title">{t.admin}</div>
           <div className="btn-sub">{t.adminDesc}</div>
         </button>
+        
+        {/* Telefone visível e seguro dentro do card */}
+        <div className="contact-inline">
+          ■ +595 981278517
+        </div>
       </section>
-      
-      <footer className="footer-contact">{t.contact}</footer>
     </main>
   );
 }

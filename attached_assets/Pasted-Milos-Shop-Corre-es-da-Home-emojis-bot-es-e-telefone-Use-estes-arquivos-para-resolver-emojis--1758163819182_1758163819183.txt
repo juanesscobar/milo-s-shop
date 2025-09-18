@@ -1,0 +1,78 @@
+Milos’Shop — Correções da Home (emojis, botões e telefone)
+Use estes arquivos para resolver: emojis quadrados, botão vermelho que não aplica e telefone muito baixo.
+■ src/pages/Home.tsx // src/pages/Home.tsx
+import { Link } from "react-router-dom";
+import "../styles/home.css";
+import LogoSilhouette from "../components/LogoSilhouette";
+export default function Home(){
+  return (
+    <main className="home">
+      <div className="brand">
+        <div className="logo-ring">
+          <LogoSilhouette />
+        </div>
+        <h1 className="title">Milos’Shop</h1>
+        <p className="welcome">
+Bienvenido, tu auto merece lo mejor <span className="emoji">■■</span> </p>
+</div>
+      <section className="panel">
+        <Link to="/cliente" className="btn-card primary" aria-label="Acceso para clientes">
+          <div className="btn-title">Cliente</div>
+          <div className="btn-sub">Acceso para clientes</div>
+        </Link>
+        <Link to="/admin" className="btn-card secondary" aria-label="Panel de administración">
+          <div className="btn-title">Administrador</div>
+          <div className="btn-sub">Panel de administración</div>
+</Link>
+        {/* Telefone visível e seguro dentro do card */}
+        <div className="contact-inline">
+■ +595 981278517 </div>
+      </section>
+    </main>
+); }
+■ src/styles/home.css /* src/styles/home.css */
+/* 1) Font stack com suporte a emoji */
+:root{
+  --bg:#000000;
+  --card:#ffffff;
+  --text-on-dark:#ffffff;
+  --muted:#A3ACB9;
+  --muted-2:#6B7280;
+  --accent:#E10600;
+  --radius:14px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+  --safe: env(safe-area-inset-bottom, 20px);
+}
+html,body,#root{height:100%}
+body{font-family: Inter, Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Ap
+/* 2) Layout */
+.home{background:linear-gradient(180deg,#000 0%,#111 100%);min-height:100vh;color:var(--text-on-dark);display:f
+p
+l
+
+.brand{display:flex;flex-direction:column;align-items:center;margin:40px 0 22px}
+.logo-ring{height:96px;width:96px;border:2px solid #fff;border-radius:999px;display:grid;place-items:center;mar
+.logo-svg{width:60px;height:24px;opacity:.95}
+.title{font-weight:800;font-size:32px;margin:0;letter-spacing:.5px}
+.welcome{color:var(--muted);margin:.55rem 0 1.1rem;font-size:16px;text-align:center}
+.emoji{font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",emoji;}
+/* 3) Card e botões (com mais especificidade e !important) */
+.panel{background:var(--card);color:#111;border-radius:var(--radius);box-shadow:var(--shadow);max-width:560px;w
+.panel .btn-card{display:block;width:100%;text-align:left;border-radius:12px;padding:18px 20px;margin:10px 0;tr
+.panel .btn-card.primary{background:var(--accent) !important;color:#fff !important;border:2px solid var(--accen
+.panel .btn-card.primary:hover{filter:brightness(.95);box-shadow:0 0 0 4px rgba(225,6,0,.14)}
+.panel .btn-card.secondary{background:#fff;border:2px solid #E5E7EB;color:#111}
+.panel .btn-card.secondary:hover{border-color:var(--accent);box-shadow:0 0 0 4px rgba(225,6,0,.1)}
+.btn-title{font-weight:700;font-size:1.05rem;margin:0}
+.btn-sub{color:var(--muted-2);font-size:.95rem;margin-top:4px}
+/* 4) Telefone dentro do card (posição correta e segura) */
+.contact-inline{
+  margin-top:8px;
+  padding-top:10px;
+  border-top:1px dashed #e5e7eb;
+  color:#6B7280;
+  font-size:.95rem;
+  text-align:center;
+}
+g
+i a t

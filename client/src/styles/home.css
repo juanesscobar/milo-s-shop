@@ -1,3 +1,4 @@
+/* 1) Font stack com suporte a emoji */
 :root{
   --bg:#000000;
   --card:#ffffff;
@@ -7,10 +8,16 @@
   --accent:#E10600;
   --radius:14px;
   --shadow:0 10px 30px rgba(0,0,0,.45);
+  --safe: env(safe-area-inset-bottom, 20px);
 }
 
 html,body,#root{height:100%}
 
+body{
+  font-family: Inter, Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* 2) Layout */
 .home{
   background:linear-gradient(180deg,#000 0%,#111 100%);
   min-height:100vh;
@@ -19,13 +26,14 @@ html,body,#root{height:100%}
   flex-direction:column;
   align-items:center;
   justify-content:center;
+  padding:20px;
 }
 
 .brand{
   display:flex;
   flex-direction:column;
   align-items:center;
-  margin:44px 0 26px;
+  margin:40px 0 22px;
 }
 
 .logo-ring{
@@ -45,18 +53,21 @@ html,body,#root{height:100%}
 }
 
 .title{
-  font-family:'Inter','Montserrat',sans-serif;
   font-weight:800;
   font-size:32px;
   margin:0;
-  letter-spacing:1px;
+  letter-spacing:.5px;
 }
 
 .welcome{
   color:var(--muted);
-  margin:.6rem 0 1.2rem;
+  margin:.55rem 0 1.1rem;
   font-size:16px;
   text-align:center;
+}
+
+.emoji{
+  font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",emoji;
 }
 
 .panel{
@@ -69,7 +80,8 @@ html,body,#root{height:100%}
   padding:20px;
 }
 
-.btn-card{
+/* 3) Card e botões (com mais especificidade e !important) */
+.panel .btn-card{
   display:block;
   width:100%;
   text-align:left;
@@ -79,26 +91,27 @@ html,body,#root{height:100%}
   transition:all .2s ease;
   text-decoration:none;
   border:2px solid transparent;
+  cursor:pointer;
 }
 
-.btn-card.primary{
-  background:var(--accent);
-  color:#fff;
-  border:2px solid var(--accent);
+.panel .btn-card.primary{
+  background:var(--accent) !important;
+  color:#fff !important;
+  border:2px solid var(--accent) !important;
 }
 
-.btn-card.primary:hover{
+.panel .btn-card.primary:hover{
   filter:brightness(.95);
   box-shadow:0 0 0 4px rgba(225,6,0,.14);
 }
 
-.btn-card.secondary{
+.panel .btn-card.secondary{
   background:#fff;
   border:2px solid #E5E7EB;
   color:#111;
 }
 
-.btn-card.secondary:hover{
+.panel .btn-card.secondary:hover{
   border-color:var(--accent);
   box-shadow:0 0 0 4px rgba(225,6,0,.1);
 }
@@ -115,10 +128,12 @@ html,body,#root{height:100%}
   margin-top:4px;
 }
 
-.footer-contact{
-  color:#9CA3AF;
-  font-size:13px;
-  margin-top:auto;
+/* 4) Telefone dentro do card (posição correta e segura) */
+.contact-inline{
+  margin-top:8px;
+  padding-top:10px;
+  border-top:1px dashed #e5e7eb;
+  color:#6B7280;
+  font-size:.95rem;
   text-align:center;
-  padding-top:20px;
 }
