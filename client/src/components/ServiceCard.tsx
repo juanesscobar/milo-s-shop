@@ -1,19 +1,21 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock } from "lucide-react";
+import { Clock, ImagePlus } from "lucide-react";
 import type { Service } from "@shared/schema";
 
 interface ServiceCardProps {
   service: Service;
   language: 'es' | 'pt';
   onReserve: (slug: string) => void;
+  onGenerateImage?: (slug: string) => void;
 }
 
 export default function ServiceCard({ 
   service,
   language,
-  onReserve
+  onReserve,
+  onGenerateImage
 }: ServiceCardProps) {
   const title = language === 'es' ? service.titleEs : service.titlePt;
   const subtitle = language === 'es' ? service.subtitleEs : service.subtitlePt;
@@ -37,18 +39,21 @@ export default function ServiceCard({
 
   return (
     <Card className="w-full hover-elevate" data-testid={`card-service-${service.slug}`}>
-      {service.imageUrl && (
-        <div className="p-3 pb-0">
-          <img 
-            src={service.imageUrl} 
-            alt={title} 
-            className="w-full h-40 object-cover rounded-lg"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+      {/* Área para gerar imagem manualmente */}
+      <div className="p-3 pb-0">
+        <div className="w-full h-40 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-muted-foreground/25">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => onGenerateImage?.(service.slug)}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            data-testid={`button-generate-image-${service.slug}`}
+          >
+            <ImagePlus className="h-4 w-4" />
+            {language === 'es' ? 'Generar Imagen' : 'Gerar Imagem'}
+          </Button>
         </div>
-      )}
+      </div>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           {title}
@@ -88,15 +93,21 @@ export default function ServiceCard({
         </div>
       </CardContent>
       
-      <CardFooter>
+      <CardFooter className="flex gap-2 justify-center">
         <Button 
           onClick={() => onReserve(service.slug)}
-          variant="destructive"
+          variant="outline"
           size="sm"
-          className="mx-auto"
           data-testid={`button-select-${service.slug}`}
         >
           {buttonText}
+        </Button>
+        <Button 
+          variant="secondary"
+          size="sm"
+          data-testid={`button-click-here-${service.slug}`}
+        >
+          {language === 'es' ? 'Click aquí' : 'Clique aqui'}
         </Button>
       </CardFooter>
     </Card>
