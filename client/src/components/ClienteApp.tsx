@@ -11,7 +11,8 @@ import BookingCard from "./BookingCard";
 import BookingFlow from "./BookingFlow";
 import VehicleSelector from "./VehicleSelector";
 import { ShoppingCart, User, History, Car, AlertTriangle } from "lucide-react";
-import servicesData from '../data/services.json';
+import { useQuery } from "@tanstack/react-query";
+import type { Service, Booking } from "@shared/schema";
 
 interface ClienteAppProps {
   language?: 'es' | 'pt';
@@ -51,46 +52,22 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
 
   const t = content[currentLanguage];
 
-  // Use local services data
-  const services = servicesData;
+  // Fetch services from API
+  const { data: services = [], isLoading: servicesLoading, error: servicesError } = useQuery<Service[]>({
+    queryKey: ['/api/services'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  const mockOrders = [
-    {
-      id: "order-1",
-      serviceName: "Produto Premium",
-      vehiclePlate: "Pedido #001",
-      date: "2024-03-15",
-      timeSlot: "14:00",
-      status: 'washing' as const,
-      price: 50000,
-      paymentMethod: 'card' as const,
-      paymentStatus: 'paid' as const
-    }
-  ];
+  // Fetch user bookings from API
+  const { data: userBookings = [], isLoading: bookingsLoading, error: bookingsError, refetch: refetchBookings } = useQuery<any[]>({
+    queryKey: ['/api/bookings'],
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
 
   const handleServiceReserve = (serviceSlug: string) => {
     const service = services.find(s => s.slug === serviceSlug);
     if (service) {
-      // Convert service data to match expected format
-      const convertedService = {
-        id: service.slug,
-        slug: service.slug,
-        nameKey: service.slug,
-        title: currentLanguage === 'es' ? service.titleEs : service.titlePt,
-        description: currentLanguage === 'es' ? service.subtitleEs : service.subtitlePt,
-        titleEs: service.titleEs,
-        titlePt: service.titlePt,
-        subtitleEs: service.subtitleEs,
-        subtitlePt: service.subtitlePt,
-        copyEs: service.copyEs,
-        copyPt: service.copyPt,
-        prices: service.prices,
-        durationMin: service.durationMin,
-        imageUrl: service.imageUrl,
-        active: true,
-        createdAt: new Date().toISOString()
-      };
-      setBookingService(convertedService);
+      setBookingService(service);
     }
   };
   
@@ -229,30 +206,78 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                 </Alert>
               )}
               
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {services.map((service) => (
-                  <NewServiceCard
-                    key={service.slug}
-                    service={service}
-                    selectedVehicleType={selectedVehicleType}
-                    language={currentLanguage}
-                    onReserve={handleServiceReserve}
-                  />
-                ))}
-              </div>
+              {servicesLoading && (
+                <div className="text-center py-8 text-muted-foreground">
+                  {currentLanguage === 'es' ? 'Cargando servicios...' : 'Carregando serviços...'}
+                </div>
+              )}
+              
+              {servicesError && (
+                <div className="text-center py-8 text-red-500">
+                  {currentLanguage === 'es' ? 'Error al cargar servicios' : 'Erro ao carregar serviços'}
+                </div>
+              )}
+              
+              {!servicesLoading && !servicesError && services.length > 0 && (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {services.map((service) => (
+                    <NewServiceCard
+                      key={service.slug}
+                      service={service}
+                      selectedVehicleType={selectedVehicleType}
+                      language={currentLanguage}
+                      onReserve={handleServiceReserve}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mockOrders.map((order) => (
-                <BookingCard
-                  key={order.id}
-                  {...order}
-                  onViewDetails={handleOrderDetails}
-                />
-              ))}
-            </div>
+            {bookingsLoading && (
+              <div className="text-center py-8 text-muted-foreground">
+                {currentLanguage === 'es' ? 'Cargando reservas...' : 'Carregando reservas...'}
+              </div>
+            )}
+            
+            {bookingsError && (
+              <div className="text-center py-8 text-red-500">
+                {currentLanguage === 'es' ? 'Error al cargar reservas' : 'Erro ao carregar reservas'}
+              </div>
+            )}
+            
+            {!bookingsLoading && !bookingsError && userBookings.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                {currentLanguage === 'es' ? 'No tienes reservas aún' : 'Você não tem reservas ainda'}
+              </div>
+            )}
+            
+            {!bookingsLoading && !bookingsError && userBookings.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {userBookings.map((booking) => {
+                  // Convert booking data to format expected by BookingCard
+                  const service = services.find(s => s.id === booking.serviceId);
+                  const serviceName = service ? (currentLanguage === 'es' ? service.titleEs : service.titlePt) : 'Servicio';
+                  
+                  return (
+                    <BookingCard
+                      key={booking.id}
+                      id={booking.id}
+                      serviceName={serviceName}
+                      vehiclePlate={`Booking-${booking.id.slice(-4)}`}
+                      date={booking.date}
+                      timeSlot={booking.timeSlot}
+                      status={booking.status}
+                      price={booking.price}
+                      paymentMethod={'cash'}
+                      paymentStatus={'pending'}
+                      onViewDetails={handleOrderDetails}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="profile" className="space-y-4">

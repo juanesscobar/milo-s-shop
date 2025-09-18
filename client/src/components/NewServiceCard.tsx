@@ -2,25 +2,10 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Clock } from "lucide-react";
 
-interface ServiceData {
-  slug: string;
-  titleEs: string;
-  titlePt: string;
-  subtitleEs: string;
-  subtitlePt: string;
-  copyEs: string;
-  copyPt: string;
-  durationMin: number;
-  prices: {
-    auto: number;
-    suv: number;
-    camioneta: number;
-  };
-  imageUrl?: string;
-}
+import type { Service } from "@shared/schema";
 
 interface NewServiceCardProps {
-  service: ServiceData;
+  service: Service;
   selectedVehicleType: 'auto' | 'suv' | 'camioneta' | null;
   language: 'es' | 'pt';
   onReserve: (serviceSlug: string) => void;
