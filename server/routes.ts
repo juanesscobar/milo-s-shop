@@ -116,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/bookings/today", async (req, res) => {
     try {
-      const bookings = await storage.getTodayBookings();
+      const bookings = await storage.getTodayBookingsWithDetails();
       res.json(bookings);
     } catch (error) {
       console.error("Error fetching today's bookings:", error);
@@ -154,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const booking = await storage.createBooking(bookingData);
       
       // Get full booking details with relations for real-time update
-      const fullBooking = await storage.getTodayBookings();
+      const fullBooking = await storage.getTodayBookingsWithDetails();
       const newBookingDetails = fullBooking.find(b => b.id === booking.id);
       
       // Emit real-time update to admin dashboard
@@ -189,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get updated booking details for real-time update
-      const fullBookings = await storage.getTodayBookings();
+      const fullBookings = await storage.getTodayBookingsWithDetails();
       const updatedBookingDetails = fullBookings.find(b => b.id === req.params.id);
       
       // Emit real-time status update to admin dashboard

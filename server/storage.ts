@@ -28,6 +28,7 @@ export interface IStorage {
   // Bookings
   getUserBookings(userId: string): Promise<Booking[]>;
   getTodayBookings(): Promise<Booking[]>;
+  getTodayBookingsWithDetails(): Promise<any[]>;
   getBooking(id: string): Promise<Booking | undefined>;
   createBooking(booking: InsertBooking): Promise<Booking>;
   updateBookingStatus(id: string, status: string): Promise<Booking | undefined>;
@@ -76,7 +77,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createService(insertService: InsertService): Promise<Service> {
-    const [service] = await db.insert(services).values([insertService]).returning();
+    const [service] = await db.insert(services).values([insertService as any]).returning();
     return service;
   }
 
@@ -92,6 +93,40 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(bookings)
       .where(eq(bookings.date, today))
       .orderBy(desc(bookings.createdAt));
+  }
+
+  async getTodayBookingsWithDetails(): Promise<any[]> {
+    const today = new Date().toISOString().split('T')[0];
+    return await db.select({
+      id: bookings.id,
+      userId: bookings.userId,
+      vehicleId: bookings.vehicleId,
+      serviceId: bookings.serviceId,
+      date: bookings.date,
+      timeSlot: bookings.timeSlot,
+      status: bookings.status,
+      price: bookings.price,
+      notes: bookings.notes,
+      createdAt: bookings.createdAt,
+      updatedAt: bookings.updatedAt,
+      // User details
+      userName: users.name,
+      userPhone: users.phone,
+      userEmail: users.email,
+      // Vehicle details
+      vehiclePlate: vehicles.plate,
+      vehicleType: vehicles.type,
+      // Service details
+      serviceName: services.titleEs,
+      serviceTitle: services.title,
+      // Payment info will be handled separately if needed
+    })
+    .from(bookings)
+    .innerJoin(users, eq(bookings.userId, users.id))
+    .innerJoin(vehicles, eq(bookings.vehicleId, vehicles.id))
+    .innerJoin(services, eq(bookings.serviceId, services.id))
+    .where(eq(bookings.date, today))
+    .orderBy(desc(bookings.createdAt));
   }
 
   async createBooking(insertBooking: InsertBooking): Promise<Booking> {

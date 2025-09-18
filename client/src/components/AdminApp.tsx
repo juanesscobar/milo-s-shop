@@ -32,8 +32,9 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
     queryKey: ['/api/bookings/today'],
     select: (data: any[]) => data.map((booking: any) => ({
       ...booking,
-      serviceName: booking.service?.titleEs || 'Servicio desconocido',
-      vehiclePlate: booking.vehicle?.licensePlate || 'Placa desconocida'
+      // Use the flat fields returned by API (from joins)
+      serviceName: booking.serviceName || 'Servicio desconocido',
+      vehiclePlate: booking.vehiclePlate || 'Placa desconocida'
     }))
   });
 
