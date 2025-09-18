@@ -1,0 +1,91 @@
+Milos'Shop — Home Bundle (para Replit)
+Este PDF contém todos os arquivos de código (Home.tsx, home.css, LogoSilhouette.tsx e instruções) prontos para
+serem usados no Replit.
+■ src/pages/Home.tsx
+import { Link } from "react-router-dom";
+import "../styles/home.css";
+import LogoSilhouette from "../components/LogoSilhouette";
+export default function Home(){
+  return (
+<main className="home">
+  <div className="brand">
+        <div className="logo-ring">
+          <LogoSilhouette />
+        </div>
+        <h1 className="title">Milos’Shop</h1>
+        <p className="subtitle">Seleccione cómo desea acceder</p>
+</div>
+      <section className="panel">
+        <Link to="/cliente" className="btn-card primary" aria-label="Acesso para clientes">
+          <div className="btn-title">Cliente</div>
+          <div className="btn-sub">Acceso para clientes</div>
+        </Link>
+        <Link to="/admin" className="btn-card secondary" aria-label="Panel de administración">
+          <div className="btn-title">Administrador</div>
+          <div className="btn-sub">Panel de administración</div>
+        </Link>
+      </section>
+      <p className="footer-hint">Home — fondo negro, tarjetas con acento rojo, tipografía Inter/Montserrat</p
+    </main>
+); }
+■ src/styles/home.css :root{
+  --bg:#000000;
+  --card:#ffffff;
+  --text-on-dark:#ffffff;
+  --muted:#A3ACB9;
+  --muted-2:#6B7280;
+  --accent:#E10600;
+  --radius:14px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+}
+html,body,#root{height:100%}
+.home{background:var(--bg);min-height:100vh;color:var(--text-on-dark);display:flex;flex-direction:column;alig
+.brand{display:flex;flex-direction:column;align-items:center;margin:44px 0 26px}
+.logo-ring{height:96px;width:96px;border:2px solid #fff;border-radius:999px;display:grid;place-items:center;m
+.logo-svg{width:60px;height:24px;opacity:.95}
+.title{font-family:'Inter','Montserrat',sans-serif;font-weight:800;font-size:32px;margin:0}
+.subtitle{color:var(--muted);margin:.35rem 0 1.2rem;font-size:16px}
+.panel{background:var(--card);color:#111;border-radius:var(--radius);box-shadow:var(--shadow);max-width:560px
+.btn-card{display:block;width:100%;text-align:left;border-radius:12px;padding:18px 20px;margin:10px 0;transit
+.btn-card.primary{background:var(--accent);color:#fff;border:2px solid var(--accent)}
+.btn-card.primary:hover{filter:brightness(.95);box-shadow:0 0 0 4px rgba(225,6,0,.14)}
+.btn-card.secondary{background:#fff;border:2px solid #E5E7EB;color:#111}
+.btn-card.secondary:hover{border-color:var(--accent);box-shadow:0 0 0 4px rgba(225,6,0,.1)}
+
+.btn-title{font-weight:700;font-size:1.05rem;margin:0}
+.btn-sub{color:var(--muted-2);font-size:.95rem;margin-top:4px}
+.footer-hint{color:#9CA3AF;font-size:12px;margin-top:18px;text-align:center}
+■ src/components/LogoSilhouette.tsx export default function LogoSilhouette(){
+  return (
+    <svg className="logo-svg" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden
+) }
+  <path d="M5 30 C30 5, 110 5, 195 30" stroke="white" strokeWidth="4" strokeLinecap="round"/>
+  <path d="M55 30 Q100 15 145 30" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+</svg>
+■ README
+# Milos'Shop — Home bundle (drop-in)
+## Arquivos incluídos:
+- `src/pages/Home.tsx` — tela inicial com logo, título, botões Cliente/Administrador
+- `src/styles/home.css` — tokens e estilos
+- `src/components/LogoSilhouette.tsx` — logo SVG minimalista embutido
+## Como usar
+1) Copie os arquivos para dentro do seu projeto Replit (na pasta correta).
+2) No seu `App.tsx`, adicione as rotas:
+   import { Routes, Route } from "react-router-dom";
+   import Home from "./pages/Home";
+   // import ClienteApp from "./pages/Cliente";
+   // import AdminApp from "./pages/Admin";
+   export default function App(){
+     return (
+       <Routes>
+         <Route path="/" element={<Home/>} />
+         <Route path="/cliente" element={<ClienteApp/>} />
+         <Route path="/admin" element={<AdminApp/>} />
+</Routes> );
+}
+3) Para usar o seu logo (PNG):
+   - Coloque o arquivo em `public/milos-logo.png`
+   - No `Home.tsx`, troque o bloco da logo por:
+     <div className="logo-ring">
+       <img src="/milos-logo.png" alt="Milos'Shop" style={{height:36}} />
+</di
