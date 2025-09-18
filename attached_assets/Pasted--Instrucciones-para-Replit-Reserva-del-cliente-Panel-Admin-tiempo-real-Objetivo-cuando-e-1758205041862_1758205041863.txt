@@ -1,0 +1,67 @@
+📌 Instrucciones para Replit — “Reserva del cliente → Panel Admin (tiempo real)”
+
+Objetivo: cuando el cliente crea una reserva en /cliente, esa reserva debe aparecer automáticamente en el Dashboard de /admin y en la lista de agendamientos, sin recargar la página.
+
+1) Modelo de datos único (consistencia)
+
+Guardar cada reserva como un documento único en la colección bookings (o equivalente) con estos campos mínimos:
+	•	id (auto)
+	•	createdAt (timestamp del servidor)
+	•	date (fecha de la reserva, YYYY-MM-DD)
+	•	time (HH:mm)
+	•	serviceId, serviceName, vehicleType
+	•	plate, customerName, customerPhone
+	•	price (validado con la base de datos)
+	•	paymentMethod (card, pix, cash)
+	•	status (pending / en_lavado / finalizado / cancelado)
+	•	updatedAt (timestamp del servidor)
+
+Importante: validar “price mismatch” antes de crear el documento (precio del front debe coincidir con el precio vigente en la base).
+
+2) Escritura atómica al confirmar la reserva (lado cliente)
+	•	Al confirmar, crear el documento en bookings con status = "pending".
+	•	Retornar al cliente un aviso: “✅ Reserva confirmada con éxito”.
+	•	No tocar otras colecciones; la fuente de verdad es bookings.
+
+3) Suscripción en tiempo real en /admin
+
+En el Dashboard y en la tabla de agendamientos:
+	•	Usar una suscripción en tiempo real a bookings filtrada por la fecha de hoy.
+	•	Al recibir un nuevo documento o un cambio de estado, actualizar contadores y listas en pantalla:
+	•	“Agendamientos de hoy” (total)
+	•	“En lavado”
+	•	“Finalizados hoy”
+	•	“Ingresos del día” (sumar cuando status = finalizado y paymentMethod definido)
+
+4) Acciones del admin (deben reflejarse en la misma colección)
+	•	Cambiar estado desde la tabla:
+	•	Iniciar lavado → status = "en_lavado"
+	•	Finalizar → status = "finalizado" + registrar hora de cierre + contabilizar ingresos
+	•	Cancelar → status = "cancelado" (sin borrar el documento)
+	•	Cada acción muestra snackbar:
+	•	Éxito: “✅ Acción realizada con éxito”
+	•	Error: “❌ Ocurrió un error. Intenta nuevamente.”
+
+5) Notificación al admin (opcional pero recomendado)
+	•	Al crear una nueva reserva, disparar notificación visual en /admin:
+	•	Badge o campana con contador + sonido breve opcional.
+	•	Toast: “🆕 Nueva reserva de {cliente} para hoy a las {hora}.”
+	•	No recargar la página; solo actualizar el estado.
+
+6) Filtros y vistas
+	•	Dashboard /admin: mostrar resumen del día (hoy).
+	•	Ver lista: tabla con filtros por Estado, Servicio, Método de pago, y búsqueda por placa o nombre.
+	•	Paginación: 10 por página.
+
+7) Seguridad y performance
+	•	Acceso a /admin solo para usuarios con rol admin.
+	•	Reglas de lectura/escritura acordes: el cliente solo puede crear su propia reserva; el admin puede leer y actualizar estados.
+	•	Evitar llamadas duplicadas; manejar loading por tarjeta (spinners).
+	•	Index para consultas por date y status (optimiza el tiempo real).
+
+8) Criterios de aceptación (QA)
+	•	Al crear una reserva en /cliente, aparece en menos de 2s en /admin (dashboard y lista).
+	•	Cambiar estado en /admin se refleja inmediatamente en los contadores.
+	•	En caso de price mismatch, se bloquea la creación y se muestra al cliente:
+“⚠️ El precio no coincide con la base de datos. Actualiza la tarifa y vuelve a intentar.”
+	•	Ningún cambio afecta la Home ni el panel del Cliente.

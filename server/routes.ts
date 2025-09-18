@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { Server as SocketIOServer } from "socket.io";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -151,6 +152,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const booking = await storage.createBooking(bookingData);
+      
+      // Get full booking details with relations for real-time update
+      const fullBooking = await storage.getTodayBookings();
+      const newBookingDetails = fullBooking.find(b => b.id === booking.id);
+      
+      // Emit real-time update to admin dashboard
+      if (newBookingDetails && app.locals.io) {
+        app.locals.io.to('admin').emit('new-booking', {
+          booking: newBookingDetails,
+          message: `Nueva reserva de ${newBookingDetails.userName} para hoy a las ${newBookingDetails.timeSlot}`
+        });
+        console.log('New booking notification sent to admin:', newBookingDetails.id);
+      }
+      
       res.status(201).json(booking);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -171,6 +186,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const booking = await storage.updateBookingStatus(req.params.id, status);
       if (!booking) {
         return res.status(404).json({ error: "Booking not found" });
+      }
+      
+      // Get updated booking details for real-time update
+      const fullBookings = await storage.getTodayBookings();
+      const updatedBookingDetails = fullBookings.find(b => b.id === req.params.id);
+      
+      // Emit real-time status update to admin dashboard
+      if (updatedBookingDetails && app.locals.io) {
+        app.locals.io.to('admin').emit('booking-updated', {
+          booking: updatedBookingDetails
+        });
+        console.log('Booking status update sent to admin:', updatedBookingDetails.id, 'new status:', status);
       }
       
       res.json(booking);
@@ -286,6 +313,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+
+  // Initialize Socket.IO for real-time updates
+  const io = new SocketIOServer(httpServer, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
+  });
+
+  // Store socket connections
+  const adminSockets = new Set();
+  
+  io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    
+    // Join admin room for real-time updates
+    socket.on('join-admin', () => {
+      console.log('Admin joined:', socket.id);
+      adminSockets.add(socket);
+      socket.join('admin');
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Client disconnected:', socket.id);
+      adminSockets.delete(socket);
+    });
+  });
+
+  // Make io accessible to routes (store in app.locals)
+  app.locals.io = io;
 
   return httpServer;
 }

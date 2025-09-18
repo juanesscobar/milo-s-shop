@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import Header from "./Header";
 import AdminDashboard from "./AdminDashboard";
 
@@ -13,6 +14,18 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { joinAdminRoom, disconnect } = useWebSocket();
+
+  // Initialize WebSocket connection for real-time updates
+  useEffect(() => {
+    console.log('AdminApp mounted - connecting to WebSocket...');
+    joinAdminRoom();
+    
+    return () => {
+      console.log('AdminApp unmounting - disconnecting WebSocket...');
+      disconnect();
+    };
+  }, [joinAdminRoom, disconnect]);
 
   // Fetch today's bookings from backend
   const { data: bookings = [], isLoading, error } = useQuery({
