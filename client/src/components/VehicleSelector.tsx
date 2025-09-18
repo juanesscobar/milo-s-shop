@@ -82,7 +82,7 @@ export default function VehicleSelector({ selectedType, onSelect, disabled = fal
                 <Button
                   key={vehicle.id}
                   variant="outline"
-                  className="justify-start h-auto p-4 hover-elevate"
+                  className="justify-start h-auto p-4 hover-elevate bg-white border-gray-300 text-gray-900 hover:bg-gray-50"
                   onClick={() => {
                     onSelect(vehicle.id);
                     setOpen(false);
