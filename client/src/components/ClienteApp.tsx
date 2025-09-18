@@ -188,7 +188,7 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                       <ServiceCard
                         key={service.id}
                         service={service}
-                        onReserve={() => handleServiceReserve(service)}
+                        onReserve={(slug) => handleServiceReserve(service)}
                         onGenerateImage={handleGenerateImage}
                         language={currentLanguage}
                       />
