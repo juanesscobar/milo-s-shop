@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import Header from "./Header";
 import AdminDashboard from "./AdminDashboard";
 
@@ -11,6 +12,7 @@ interface AdminAppProps {
 export default function AdminApp({ language = 'es' }: AdminAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch today's bookings from backend
   const { data: bookings = [], isLoading, error } = useQuery({
@@ -36,16 +38,47 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   // Mutation to update booking status
   const statusUpdateMutation = useMutation({
     mutationFn: async ({ bookingId, newStatus }: { bookingId: string; newStatus: string }) => {
-      return fetch(`/api/bookings/${bookingId}/status`, {
+      const response = await fetch(`/api/bookings/${bookingId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ status: newStatus })
-      }).then(res => res.json());
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Error updating status');
+      }
+      
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/bookings/today'] });
+      const statusText = variables.newStatus === 'washing' ? 'en lavado' : 
+                        variables.newStatus === 'done' ? 'finalizado' : 
+                        variables.newStatus === 'cancelled' ? 'cancelado' : variables.newStatus;
+      
+      toast({
+        title: "✅ Acción realizada con éxito",
+        description: `Estado actualizado a: ${statusText}`,
+      });
+    },
+    onError: (error: any) => {
+      if (error.message.includes('Price mismatch') || error.message.includes('price')) {
+        toast({
+          title: "⚠️ Error de precio",
+          description: "El precio no coincide con la base de datos. Actualiza la tarifa del servicio y vuelve a intentar.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "❌ Ocurrió un error. Intenta nuevamente.",
+          description: error.message || "No se pudo actualizar el estado de la reserva",
+          variant: "destructive",
+        });
+      }
     }
   });
 

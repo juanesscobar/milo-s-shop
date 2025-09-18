@@ -12,40 +12,51 @@ const statusConfig = {
     variant: 'secondary' as const,
     icon: Clock,
     defaultText: 'En espera',
-    color: 'text-muted-foreground'
+    color: '#9CA3AF',
+    bgColor: 'bg-gray-100', 
+    textColor: 'text-gray-400',
+    emoji: '⏳'
   },
   washing: {
-    variant: 'default' as const,
+    variant: 'default' as const, 
     icon: Droplets,
     defaultText: 'En lavado',
-    color: 'text-primary-foreground'
+    color: '#F97316',
+    bgColor: 'bg-orange-100',
+    textColor: 'text-orange-500',
+    emoji: '🚿'
   },
   done: {
     variant: 'outline' as const,
     icon: CheckCircle,
     defaultText: 'Finalizado',
-    color: 'text-green-600'
+    color: '#16A34A',
+    bgColor: 'bg-green-100',
+    textColor: 'text-green-600',
+    emoji: '✅'
   },
   cancelled: {
     variant: 'destructive' as const,
     icon: XCircle,
     defaultText: 'Cancelado',
-    color: 'text-destructive-foreground'
+    color: '#DC2626',
+    bgColor: 'bg-red-100',
+    textColor: 'text-red-600',
+    emoji: '✖️'
   }
 };
 
 export default function StatusBadge({ status, text, size = 'default' }: StatusBadgeProps) {
   const config = statusConfig[status];
-  const IconComponent = config.icon;
   const displayText = text || config.defaultText;
 
   return (
     <Badge 
-      variant={config.variant}
-      className="flex items-center gap-1"
+      variant="outline"
+      className={`flex items-center gap-1 ${config.bgColor} ${config.textColor} border-current`}
       data-testid={`badge-status-${status}`}
     >
-      <IconComponent className={`h-3 w-3 ${config.color}`} />
+      <span className="text-sm">{config.emoji}</span>
       <span className={size === 'sm' ? 'text-xs' : 'text-sm'}>
         {displayText}
       </span>
