@@ -13,7 +13,7 @@
   },
   {
     "slug": "lavado-encerado",
-    "titleEs": "Lavado + encerado",
+    "titleEs": "Lavado + Encerado",
     "titlePt": "Lavagem + enceramento",
     "subtitleEs": "Incluye shampoo V-Floc + Cera líquida carnauba Plus + Cera en pasta Native",
     "subtitlePt": "Inclui shampoo V-Floc + Cera líquida carnaúba Plus + Cera em pasta Native",
@@ -25,7 +25,7 @@
   },
   {
     "slug": "pulida-comercial",
-    "titleEs": "Pulida Comercial (2 pasos)",
+    "titleEs": "Pulida Comercial",
     "titlePt": "Polimento Comercial (2 passos)",
     "subtitleEs": "Lavado detallado interior/exterior + Pulida (V-Cut + V80) + protección 1 año",
     "subtitlePt": "Lavagem detalhada interno/externo + Polimento (V-Cut + V80) + proteção 1 ano",
@@ -73,7 +73,7 @@
   },
   {
     "slug": "nano-ceramica",
-    "titleEs": "Protección nano cerámica CarPro",
+    "titleEs": "Protección Nano Cerámica CarPro",
     "titlePt": "Proteção nano cerâmica CarPro",
     "subtitleEs": "Incluye: lavado detallado, pulida y capa cerámica + mantenimiento",
     "subtitlePt": "Inclui: lavagem detalhada, polimento e camada cerâmica + manutenção",
@@ -85,7 +85,7 @@
   },
   {
     "slug": "mantenimiento-nano",
-    "titleEs": "Mantenimiento de nano cerámica",
+    "titleEs": "Mantenimiento de Nano Cerámica",
     "titlePt": "Manutenção da nano cerâmica",
     "subtitleEs": "Refuerzo de capa y brillo",
     "subtitlePt": "Reforço de camada e brilho",
