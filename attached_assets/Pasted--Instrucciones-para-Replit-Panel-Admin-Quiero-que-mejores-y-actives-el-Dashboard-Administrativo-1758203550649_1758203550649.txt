@@ -1,0 +1,63 @@
+📌 Instrucciones para Replit — Panel Admin
+
+Quiero que mejores y actives el Dashboard Administrativo sin modificar las demás páginas (Cliente, Home). Aplica solo en /admin.
+
+1) Activar acciones en los cards
+	•	Agendamientos de hoy
+	•	Añadir botón “Ver lista” que navegue a la tabla de agendamientos del día.
+	•	Filtro preaplicado: fecha = hoy.
+	•	En lavado
+	•	Añadir botón “Ver detalle” que abre la lista de vehículos en proceso.
+	•	En cada fila, incluir acciones rápidas: “Marcar como finalizado” y “Cancelar”.
+	•	Finalizados hoy
+	•	Añadir botón “Historial del día” que muestra los servicios completados (con hora y método de pago).
+	•	Ingresos del día
+	•	Añadir botón “Ver detalles” con el desglose por servicio y método de pago (tarjeta/PIX/efectivo).
+
+Asegúrate de que todos los botones funcionen con sus rutas correctas y muestren un snackbar de éxito o error.
+
+2) Estados y colores (consistencia visual)
+	•	Pendiente / En espera: gris #9CA3AF
+	•	En lavado: naranja #F97316
+	•	Finalizado: verde #16A34A
+	•	Cancelado: rojo #DC2626
+	•	Los badges deben ser visibles, con icono correspondiente (⏳, 🚿, ✅, ✖️).
+
+3) Tabla de agendamientos (vista “Ver lista”)
+	•	Columnas: Cliente, Vehículo/Placa, Servicio, Hora, Estado, Pago, Acciones.
+	•	Acciones por fila: Iniciar lavado, Finalizar, Cancelar, Ver detalles.
+	•	Añadir buscador (por placa o nombre) y paginación (10 por página).
+	•	Al cambiar estado, refrescar la fila en tiempo real (sin recargar la página).
+
+4) Confirmaciones y errores (UX)
+	•	Al completar una acción, mostrar:
+	•	Éxito: “✅ Acción realizada con éxito”
+	•	Error genérico: “❌ Ocurrió un error. Intenta nuevamente.”
+	•	Si hay incoherencia de precio (price mismatch), mostrar:
+“⚠️ El precio no coincide con la base de datos. Actualiza la tarifa del servicio y vuelve a intentar.”
+
+5) Resumen gráfico (mini-analytics en el dashboard)
+	•	Agregar dos tarjetas con gráficos simples:
+	•	Servicios más solicitados (hoy) – barras.
+	•	Ingresos por método de pago (hoy) – dona/pie.
+	•	No recargar la página completa; actualizar los datos cuando se pulse “Actualizar”.
+
+6) Botón “Actualizar”
+	•	El botón “Actualizar” en el header debe refrescar todas las tarjetas (contadores, gráficos y tablas) sin salir de la ruta actual.
+
+7) Performance y seguridad
+	•	Evitar llamadas dobles a la API.
+	•	Controlar estados de carga con spinners en cada card.
+	•	Restringir acceso a /admin a usuarios autenticados con rol admin.
+	•	Registrar todas las acciones críticas (finalizar/cancelar) en el log del sistema.
+
+8) Texto de bienvenida (opcional)
+	•	Debajo de “Dashboard” añadir un subtítulo breve:
+“Gestión rápida de tus reservas y servicios de hoy.”
+
+9) Criterios de aceptación
+	•	Todos los botones de los cards navegan o ejecutan acciones.
+	•	Cambios de estado reflejados en tiempo real en la tabla y en los contadores.
+	•	Snackbars de éxito/error visibles y claros.
+	•	Gráficos muestran datos de hoy y se actualizan al pulsar “Actualizar”.
+	•	Ninguna modificación rompe el panel del Cliente ni la Home.
