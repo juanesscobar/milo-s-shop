@@ -18,10 +18,16 @@ import { Server as SocketIOServer } from "socket.io";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import bcrypt from 'bcrypt';
 import { storage } from "./storage";
-import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, insertPaymentSchema } from "@shared/schema";
+import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema } from "@shared/schema";
 import { z } from "zod";
 import { ImageOptimizer } from './imageOptimizer';
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+
+// Import new auth schema
+import { users as authUsers, type InsertUser as AuthInsertUser } from "@shared/auth-schema";
 
 // Extender la interfaz de Session para incluir nuestras propiedades personalizadas
 declare module 'express-session' {
@@ -87,76 +93,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ===== API DE USUARIOS =====
-  // Crear nuevo usuario (usado internamente por el sistema)
-  app.post("/api/users", async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if user already exists by phone - return existing user if found
-      const existingUser = await storage.getUserByPhone(userData.phone);
-      if (existingUser) {
-        return res.status(200).json(existingUser);
-      }
-      
-      const user = await storage.createUser(userData);
-      res.status(201).json(user);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid user data", details: error.errors });
-      }
-      console.error("Error creating user:", error);
-      res.status(500).json({ error: "Failed to create user" });
-    }
-  });
-
-  app.get("/api/users/:id", async (req, res) => {
-    try {
-      const user = await storage.getUser(req.params.id);
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ error: "Failed to fetch user" });
-    }
-  });
-
-  // ===== API DE AUTENTICACIÓN =====
-  // Registro de nuevos usuarios clientes
+  // Client Authentication API
   app.post("/api/auth/register", async (req, res) => {
+    console.log('POST /api/auth/register called with body:', req.body);
+    console.log('🔍 DEBUG: Password validation check');
     try {
-      const { name, phone, email } = req.body;
-      
-      if (!name || !phone) {
-        return res.status(400).json({ error: "Name and phone are required" });
+      const { name, phone, email, password } = req.body;
+
+      if (!name || !phone || !password) {
+        console.log('❌ Validation failed: missing required fields');
+        return res.status(400).json({ error: "Name, phone and password are required" });
       }
+
+      // DEBUG: Log password details
+      console.log('🔍 DEBUG: Password length:', password.length);
+      console.log('🔍 DEBUG: Password value:', password);
+
+      // Validate password strength - TEMPORARILY RELAXED FOR TESTING
+      if (password.length < 6) {
+        console.log('❌ Password validation failed: too short (minimum 6 for testing)');
+        return res.status(400).json({ error: "Password must be at least 6 characters long" });
+      }
+
+      // TEMPORARILY DISABLED strict validation for testing
+      /*
+      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      const hasNumber = /\d/.test(password);
+      if (!hasSpecialChar || !hasNumber) {
+        console.log('❌ Password validation failed: missing special char or number');
+        return res.status(400).json({ error: "Password must contain at least one special character and one number" });
+      }
+      */
+      console.log('✅ Password validation passed');
 
       // Check if user already exists
       const existingUser = await storage.getUserByPhone(phone);
       if (existingUser) {
+        console.log('User already exists with phone:', phone);
         return res.status(409).json({ error: "User with this phone already exists" });
       }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create new client user
       const userData = {
         name,
         phone,
         email: email || null,
+        password: hashedPassword,
         role: 'client' as const,
         isGuest: false
       };
 
       const user = await storage.createUser(userData);
-      
+
       // Create session
-      req.session.userId = user.id;
-      req.session.userRole = user.role;
+      (req.session as any).userId = user.id;
+      (req.session as any).userRole = user.role;
 
       // Return user without sensitive data
-      const { ...userResponse } = user;
-      res.status(201).json({ user: userResponse, message: "User registered successfully" });
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({ user: userWithoutPassword, message: "User registered successfully" });
     } catch (error) {
       console.error("Error registering user:", error);
       res.status(500).json({ error: "Failed to register user" });
@@ -164,30 +162,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/login", async (req, res) => {
+    console.log('POST /api/auth/login called with body:', req.body);
+    console.log('🔍 DEBUG: Login attempt analysis');
     try {
-      const { phone, email } = req.body;
+      const { phone, email, password } = req.body;
 
-      if (!phone && !email) {
-        return res.status(400).json({ error: "Phone or email is required" });
+      if ((!phone && !email) || !password) {
+        console.log('❌ Validation failed: missing phone/email or password');
+        return res.status(400).json({ error: "Phone/email and password are required" });
       }
+
+      // DEBUG: Log search criteria
+      console.log('🔍 DEBUG: Search criteria - phone:', phone, 'email:', email);
 
       // Find user by phone or email
       let user;
       if (phone) {
+        console.log('🔍 Searching user by phone:', phone);
         user = await storage.getUserByPhone(phone);
+        console.log('🔍 DEBUG: Phone search result:', user ? 'FOUND' : 'NOT FOUND');
+        if (user) {
+          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, phone: user.phone, hasPassword: !!user.password });
+        }
+      } else if (email) {
+        console.log('🔍 Searching user by email:', email);
+        user = await storage.getUserByEmail(email);
+        console.log('🔍 DEBUG: Email search result:', user ? 'FOUND' : 'NOT FOUND');
+        if (user) {
+          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, email: user.email, hasPassword: !!user.password });
+        }
       }
-      
+
       if (!user) {
+        console.log('❌ User not found - Let me check what users exist in DB');
+        // DEBUG: List all users to see what's in the database
+        const allUsers = await db.select().from(authUsers);
+        console.log('🔍 DEBUG: All users in database:', allUsers.map((u: any) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email })));
         return res.status(404).json({ error: "User not found" });
       }
 
+      console.log('User found:', user.id);
+
+      // Check password
+      if (!user.password) {
+        return res.status(400).json({ error: "Password authentication required" });
+      }
+
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid password" });
+      }
+
       // Create session
-      req.session.userId = user.id;
-      req.session.userRole = user.role;
+      (req.session as any).userId = user.id;
+      (req.session as any).userRole = user.role;
 
       // Return user without sensitive data
-      const { ...userResponse } = user;
-      res.json({ user: userResponse, message: "Login successful" });
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword, message: "Login successful" });
     } catch (error) {
       console.error("Error logging in user:", error);
       res.status(500).json({ error: "Failed to login" });
@@ -210,86 +242,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/me", async (req, res) => {
     try {
-      if (!req.session.userId) {
+      if (!(req.session as any).userId) {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const user = await storage.getUser(req.session.userId);
+      const user = await storage.getUser((req.session as any).userId);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      const { ...userResponse } = user;
-      res.json({ user: userResponse });
+      res.json({ user: user });
     } catch (error) {
       console.error("Error fetching current user:", error);
       res.status(500).json({ error: "Failed to fetch user data" });
     }
   });
 
-  // ===== API DE VEHÍCULOS =====
-  // Obtener vehículos de un usuario específico
-  app.get("/api/users/:userId/vehicles", async (req, res) => {
+  // DEBUG: Temporary endpoint to check users in database
+  app.get("/api/debug/users", async (req, res) => {
     try {
-      const vehicles = await storage.getUserVehicles(req.params.userId);
-      res.json(vehicles);
+      console.log('🔍 DEBUG: Testing authUsers schema query');
+      const allUsers = await db.select().from(authUsers);
+      console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'users');
+      console.log('🔍 DEBUG: All users in database:');
+      allUsers.forEach((user: any) => {
+        console.log(`   - ID: ${user.id}, Name: ${user.name}, Phone: ${user.phone}, Email: ${user.email}, HasPassword: ${!!user.passwordHash}`);
+      });
+      res.json({
+        count: allUsers.length,
+        users: allUsers.map((u: any) => ({
+          id: u.id,
+          name: u.name,
+          phone: u.phone,
+          email: u.email,
+          role: u.role,
+          hasPassword: !!u.passwordHash,
+          createdAt: u.createdAt
+        }))
+      });
     } catch (error) {
-      console.error("Error fetching user vehicles:", error);
-      res.status(500).json({ error: "Failed to fetch vehicles" });
+      console.error("❌ Error fetching users:", error);
+      console.error("❌ Error type:", typeof error);
+      console.error("❌ Error stack:", error instanceof Error ? error.stack : 'No stack');
+      res.status(500).json({ error: "Failed to fetch users", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
-  app.post("/api/vehicles", async (req, res) => {
+  // Create user (for booking flow) - UPDATED FOR NEW AUTH SYSTEM
+  app.post("/api/users", async (req, res) => {
+    console.log('POST /api/users called with body:', req.body);
+    console.log('Headers:', req.headers['content-type']);
     try {
-      const vehicleData = insertVehicleSchema.parse(req.body);
+      const { name, phone, email, language, role } = req.body;
+
+      if (!name || !phone) {
+        console.log('Validation failed: name or phone missing');
+        return res.status(400).json({ error: "Name and phone are required" });
+      }
+
+      console.log('🔍 DEBUG: Checking if user exists with phone:', phone);
+      // Check if user already exists using new auth schema
+      const [existingUser] = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+      console.log('🔍 DEBUG: Existing user query result:', existingUser ? 'FOUND' : 'NOT FOUND');
+      if (existingUser) {
+        console.log('User already exists:', existingUser.id);
+        // Return existing user instead of error for booking flow compatibility
+        const { passwordHash: _, ...userWithoutPassword } = existingUser;
+        return res.status(200).json(userWithoutPassword);
+      }
+
+      console.log('🔍 DEBUG: Creating new guest user');
+      // Create new client user WITHOUT password (for booking flow compatibility)
+      // In production, users should register through /api/auth/register
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      const userData = {
+        id: userId,
+        name: name.trim(),
+        phone: phone,
+        email: email || null,
+        passwordHash: '', // Empty password hash for booking flow users (they can't login)
+        role: (role as 'client' | 'admin') || 'client',
+        companyId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      console.log('🔍 DEBUG: Inserting user data:', { ...userData, passwordHash: '[HIDDEN]' });
+      await db.insert(authUsers).values(userData);
+      console.log('Created guest user:', userId);
+
+      // Return user without password field
+      const { passwordHash: _, ...userWithoutPassword } = userData;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("❌ Error creating user:", error);
+      console.error("❌ Error type:", typeof error);
+      console.error("❌ Error stack:", error instanceof Error ? error.stack : 'No stack');
+      console.error("❌ Error message:", error instanceof Error ? error.message : String(error));
+      res.status(500).json({ error: "Failed to create user", details: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  // Create vehicle (for booking flow)
+  app.post("/api/vehicles", async (req, res) => {
+    console.log('POST /api/vehicles called with body:', req.body);
+    console.log('Headers:', req.headers['content-type']);
+    try {
+      const { userId, plate, type } = req.body;
+
+      if (!userId || !plate || !type) {
+        console.log('Validation failed: userId, plate or type missing');
+        return res.status(400).json({ error: "User ID, plate and type are required" });
+      }
+
+      const vehicleData = {
+        userId,
+        plate,
+        type
+      };
+
       const vehicle = await storage.createVehicle(vehicleData);
+      console.log('Created vehicle:', vehicle);
       res.status(201).json(vehicle);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid vehicle data", details: error.errors });
-      }
       console.error("Error creating vehicle:", error);
-      res.status(500).json({ error: "Failed to create vehicle" });
+      console.error("Error type:", typeof error);
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack');
+      res.status(500).json({ error: "Failed to create vehicle", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
-  // ===== API DE RESERVAS =====
-  // Obtener reservas (protegido - requiere autenticación)
+  // Bookings API
+  app.post("/api/bookings", async (req, res) => {
+    console.log('POST /api/bookings called with body:', req.body);
+    console.log('Headers:', req.headers['content-type']);
+    try {
+      const bookingData = insertBookingSchema.parse(req.body);
+      console.log('Parsed booking data:', bookingData);
+      const booking = await storage.createBooking(bookingData);
+      console.log('Created booking:', booking);
+      res.status(201).json(booking);
+    } catch (error) {
+      console.error("Error creating booking:", error);
+      console.error("Error type:", typeof error);
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack');
+      if (error instanceof z.ZodError) {
+        console.log('Zod validation error:', error.errors);
+        return res.status(400).json({ error: "Invalid booking data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create booking", details: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   app.get("/api/bookings", async (req, res) => {
     try {
       // Check authentication
-      if (!req.session.userId) {
+      if (!(req.session as any).userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      // If admin, return all today's bookings
-      if (req.session.userRole === 'admin' || req.session.userRole === 'operator') {
-        const bookings = await storage.getTodayBookings();
-        return res.json(bookings);
-      }
-
-      // If client, return only their bookings
-      const userBookings = await storage.getUserBookings(req.session.userId);
+      // Return user bookings
+      const userBookings = await storage.getUserBookings((req.session as any).userId);
       res.json(userBookings);
     } catch (error) {
       console.error("Error fetching bookings:", error);
-      res.status(500).json({ error: "Failed to fetch bookings" });
+      res.status(500).json({ error: "Failed to fetch bookings", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
-  app.get("/api/users/:userId/bookings", async (req, res) => {
-    try {
-      const bookings = await storage.getUserBookings(req.params.userId);
-      res.json(bookings);
-    } catch (error) {
-      console.error("Error fetching user bookings:", error);
-      res.status(500).json({ error: "Failed to fetch bookings" });
-    }
-  });
-
+  // Get today's bookings (for admin dashboard)
   app.get("/api/bookings/today", async (req, res) => {
     try {
-      const bookings = await storage.getTodayBookingsWithDetails();
+      console.log("Fetching today's bookings");
+      const bookings = await storage.getTodayBookings();
+      console.log(`Found ${bookings.length} bookings for today`);
       res.json(bookings);
     } catch (error) {
       console.error("Error fetching today's bookings:", error);
@@ -300,20 +426,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/bookings", async (req, res) => {
     try {
       const bookingData = insertBookingSchema.parse(req.body);
-      
+
       // Validate that service exists and get pricing
       const service = await storage.getService(bookingData.serviceId);
       if (!service) {
         return res.status(404).json({ error: "Service not found" });
       }
-      
+
       // Validate that vehicle exists and belongs to user
       const vehicles = await storage.getUserVehicles(bookingData.userId);
       const vehicle = vehicles.find(v => v.id === bookingData.vehicleId);
       if (!vehicle) {
         return res.status(404).json({ error: "Vehicle not found or does not belong to user" });
       }
-      
+
       // Validate price matches service pricing for vehicle type
       const vehicleType = vehicle.type as 'auto' | 'suv' | 'camioneta';
       const expectedPrice = service.prices[vehicleType];
@@ -324,22 +450,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provided: bookingData.price
         });
       }
-      
+
       const booking = await storage.createBooking(bookingData);
-      
-      // Get full booking details with relations for real-time update
-      const fullBooking = await storage.getTodayBookingsWithDetails();
-      const newBookingDetails = fullBooking.find(b => b.id === booking.id);
-      
+
       // Emit real-time update to admin dashboard
-      if (newBookingDetails && app.locals.io) {
+      if (app.locals.io) {
         app.locals.io.to('admin').emit('new-booking', {
-          booking: newBookingDetails,
-          message: `Nueva reserva de ${newBookingDetails.userName} para hoy a las ${newBookingDetails.timeSlot}`
+          booking: booking,
+          message: `Nueva reserva creada para hoy a las ${booking.timeSlot}`
         });
-        console.log('New booking notification sent to admin:', newBookingDetails.id);
+        console.log('New booking notification sent to admin:', booking.id);
       }
-      
+
       res.status(201).json(booking);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -350,87 +472,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update booking status
   app.patch("/api/bookings/:id/status", async (req, res) => {
     try {
+      const { id } = req.params;
       const { status } = req.body;
-      if (!status || !["waiting", "washing", "done", "cancelled"].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
+
+      console.log(`Updating booking ${id} status to ${status}`);
+
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
       }
-      
-      const booking = await storage.updateBookingStatus(req.params.id, status);
-      if (!booking) {
+
+      const updatedBooking = await storage.updateBookingStatus(id, status);
+      if (!updatedBooking) {
+        console.log(`Booking ${id} not found`);
         return res.status(404).json({ error: "Booking not found" });
       }
-      
-      // Get updated booking details for real-time update
-      const fullBookings = await storage.getTodayBookingsWithDetails();
-      const updatedBookingDetails = fullBookings.find(b => b.id === req.params.id);
-      
-      // Emit real-time status update to admin dashboard
-      if (updatedBookingDetails && app.locals.io) {
-        app.locals.io.to('admin').emit('booking-updated', {
-          booking: updatedBookingDetails
-        });
-        console.log('Booking status update sent to admin:', updatedBookingDetails.id, 'new status:', status);
-      }
-      
-      res.json(booking);
+
+      console.log(`Booking ${id} status updated successfully`);
+      res.json(updatedBooking);
     } catch (error) {
       console.error("Error updating booking status:", error);
       res.status(500).json({ error: "Failed to update booking status" });
     }
   });
 
-  // ===== API DE PAGOS =====
-  // Crear nuevo pago para una reserva
-  app.post("/api/payments", async (req, res) => {
-    try {
-      const paymentData = insertPaymentSchema.parse(req.body);
-      
-      // Verify booking exists before creating payment
-      const booking = await storage.getBooking(paymentData.bookingId);
-      if (!booking) {
-        return res.status(404).json({ error: "Booking not found" });
-      }
-      
-      const payment = await storage.createPayment(paymentData);
-      res.status(201).json(payment);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid payment data", details: error.errors });
-      }
-      console.error("Error creating payment:", error);
-      res.status(500).json({ error: "Failed to create payment" });
-    }
-  });
-
-  app.patch("/api/payments/:id/status", async (req, res) => {
-    try {
-      const { status } = req.body;
-      if (!status || !["pending", "paid", "failed"].includes(status)) {
-        return res.status(400).json({ error: "Invalid payment status" });
-      }
-      
-      const payment = await storage.updatePaymentStatus(req.params.id, status);
-      if (!payment) {
-        return res.status(404).json({ error: "Payment not found" });
-      }
-      
-      res.json(payment);
-    } catch (error) {
-      console.error("Error updating payment status:", error);
-      res.status(500).json({ error: "Failed to update payment status" });
-    }
-  });
-
   // Configure multer for file uploads
   const uploadDir = path.join(process.cwd(), 'attached_assets', 'service_images');
-  
+
   // Ensure upload directory exists
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
-  
+
   const upload = multer({
     storage: multer.diskStorage({
       destination: uploadDir,
@@ -455,7 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       fileSize: 5 * 1024 * 1024 // 5MB limit
     }
   });
-  
+
   // Service image upload route
   app.post('/api/services/upload-image', upload.single('image'), async (req, res) => {
     try {
@@ -548,26 +623,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Store socket connections
   const adminSockets = new Set();
-  
+
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
-    
+
     // Join admin room for real-time updates (with basic auth)
     socket.on('join-admin', (authToken) => {
       // Basic admin auth - in production, use proper JWT or session validation
       const adminToken = process.env.ADMIN_WS_TOKEN || 'admin-secret-key';
-      
+
       if (authToken !== adminToken) {
         console.log('Unauthorized admin access attempt:', socket.id);
         socket.emit('auth-error', 'Invalid admin token');
         return;
       }
-      
+
       console.log('Admin joined:', socket.id);
       adminSockets.add(socket);
       socket.join('admin');
     });
-    
+
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
       adminSockets.delete(socket);

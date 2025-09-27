@@ -1,9 +1,12 @@
+import 'dotenv/config';
 import { db } from "./db";
-import { services } from "@shared/schema";
+import { services, users } from "@shared/schema";
+import bcrypt from 'bcrypt';
 
 const seedServices = [
   {
-    nameKey: "basic_wash",
+    id: "service_basic_wash",
+    slug: "basic_wash",
     title: "Lavado Básico",
     description: "Lavado exterior completo con jabón, enjuague y secado. Incluye llantas y rines.",
     prices: {
@@ -11,12 +14,11 @@ const seedServices = [
       suv: 30000,
       camioneta: 35000
     },
-    durationMin: 30,
-    imageUrl: "https://images.unsplash.com/photo-1558618047-3c8c76c8d04d?w=400&h=160&fit=crop",
     active: true
   },
   {
-    nameKey: "premium_wash",
+    id: "service_premium_wash",
+    slug: "premium_wash",
     title: "Lavado Premium",
     description: "Lavado completo exterior e interior, aspirado, tablero, cristales y perfumado.",
     prices: {
@@ -24,12 +26,11 @@ const seedServices = [
       suv: 55000,
       camioneta: 65000
     },
-    durationMin: 60,
-    imageUrl: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=400&h=160&fit=crop",
     active: true
   },
   {
-    nameKey: "detail_complete",
+    id: "service_detail_complete",
+    slug: "detail_complete",
     title: "Detallado Completo",
     description: "Servicio premium con cera, pulido, tratamiento de cuero y protección UV.",
     prices: {
@@ -37,12 +38,11 @@ const seedServices = [
       suv: 100000,
       camioneta: 120000
     },
-    durationMin: 120,
-    imageUrl: "https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=400&h=160&fit=crop",
     active: true
   },
   {
-    nameKey: "express_wash",
+    id: "service_express_wash",
+    slug: "express_wash",
     title: "Lavado Express",
     description: "Lavado rápido exterior, ideal para mantenimiento semanal.",
     prices: {
@@ -50,12 +50,11 @@ const seedServices = [
       suv: 18000,
       camioneta: 22000
     },
-    durationMin: 15,
-    imageUrl: "https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=400&h=160&fit=crop",
     active: true
   },
   {
-    nameKey: "engine_wash",
+    id: "service_engine_wash",
+    slug: "engine_wash",
     title: "Lavado de Motor",
     description: "Limpieza especializada del compartimento del motor con productos específicos.",
     prices: {
@@ -63,12 +62,11 @@ const seedServices = [
       suv: 40000,
       camioneta: 45000
     },
-    durationMin: 45,
-    imageUrl: "https://images.unsplash.com/photo-1563659983-0f4cca2dc431?w=400&h=160&fit=crop",
     active: true
   },
   {
-    nameKey: "ceramic_coating",
+    id: "service_ceramic_coating",
+    slug: "ceramic_coating",
     title: "Recubrimiento Cerámico",
     description: "Protección avanzada con recubrimiento cerámico de larga duración.",
     prices: {
@@ -76,8 +74,6 @@ const seedServices = [
       suv: 180000,
       camioneta: 220000
     },
-    durationMin: 180,
-    imageUrl: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=400&h=160&fit=crop",
     active: true
   }
 ];
@@ -85,15 +81,64 @@ const seedServices = [
 export async function seedDatabase() {
   try {
     console.log("🌱 Starting database seeding...");
-    
+
+    // Clear existing services and users
+    await db.delete(services);
+    await db.delete(users);
+
     // Insert services
     for (const service of seedServices) {
-      await db.insert(services).values([service]).onConflictDoNothing({ target: services.nameKey });
+      await db.insert(services).values(service);
     }
-    
+
+    // Insert test users with different formats for testing
+    const testUsers = [
+      {
+        id: "user_test_123",
+        name: "Usuario Test",
+        email: "test@example.com",
+        phone: "123456789",
+        password: await bcrypt.hash("Test123!", 12),
+        role: "client" as const,
+        language: "es",
+        isGuest: false,
+        createdAt: new Date()
+      },
+      {
+        id: "user_juan_escobar",
+        name: "Juan Escobar",
+        email: "escobarbvega.juanandres21@gmail.com",
+        phone: "+595973640191",
+        password: await bcrypt.hash("123456", 12),
+        role: "client" as const,
+        language: "es",
+        isGuest: false,
+        createdAt: new Date()
+      },
+      {
+        id: "user_juan_escobar_alt",
+        name: "Juan Escobar Alt",
+        email: "escobarbvega.juanandres21@gmail.com",
+        phone: "0973640191",
+        password: await bcrypt.hash("123456", 12),
+        role: "client" as const,
+        language: "es",
+        isGuest: false,
+        createdAt: new Date()
+      }
+    ];
+
+    for (const testUser of testUsers) {
+      await db.insert(users).values(testUser);
+    }
+
     console.log("✅ Database seeded successfully!");
     console.log(`📋 Added ${seedServices.length} services`);
-    
+    console.log(`👤 Added ${testUsers.length} test users:`);
+    testUsers.forEach(user => {
+      console.log(`   - ${user.name}: ${user.email} / ${user.phone}`);
+    });
+
   } catch (error) {
     console.error("❌ Error seeding database:", error);
     throw error;

@@ -21,17 +21,24 @@ interface ClienteAppProps {
 }
 
 export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
+  console.log('🔐 ClienteApp: Componente renderizado');
+
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
   const [selectedVehicleType, setSelectedVehicleType] = useState<'auto' | 'suv' | 'camioneta' | null>(null);
   const [bookingService, setBookingService] = useState<any | null>(null);
-  
+  const [forceAuthUpdate, setForceAuthUpdate] = useState(0);
+
   // Authentication
   const { user, isLoading: authLoading, isAuthenticated, logout } = useAuth();
 
+  console.log('🔐 ClienteApp: Estado de auth - isAuthenticated:', isAuthenticated, 'user:', user, 'authLoading:', authLoading);
+
   // Authentication callback
   const handleAuthSuccess = (authenticatedUser: any) => {
-    // The useAuth hook will automatically update and re-render the component
-    console.log('User authenticated:', authenticatedUser.name);
+    console.log('🔐 ClienteApp: handleAuthSuccess llamado con usuario:', authenticatedUser);
+    console.log('🔐 ClienteApp: Usuario autenticado:', authenticatedUser.name);
+    // Force re-render to update authentication state
+    setForceAuthUpdate(prev => prev + 1);
   };
 
   const content = {
@@ -71,7 +78,13 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
 
   // Fetch services from API
   const { data: services = [], isLoading: servicesLoading, error: servicesError } = useQuery<Service[]>({
-    queryKey: ['/api/services'],
+    queryKey: ['services', selectedVehicleType],
+    queryFn: async () => {
+      const url = selectedVehicleType ? `/api/services?vehicleType=${selectedVehicleType}` : '/api/services';
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch services');
+      return res.json();
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -251,7 +264,13 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                   {currentLanguage === 'es' ? 'Error al cargar servicios' : 'Erro ao carregar serviços'}
                 </div>
               )}
-              
+
+              {!servicesLoading && !servicesError && services.length === 0 && selectedVehicleType && (
+                <div className="text-center py-8 text-muted-foreground">
+                  {currentLanguage === 'es' ? 'No hay servicios para este tipo de vehículo' : 'Não há serviços para este tipo de veículo'}
+                </div>
+              )}
+
               {!servicesLoading && !servicesError && services.length > 0 && (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                   {services.map((service) => (
@@ -292,7 +311,7 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                 {userBookings.map((booking) => {
                   // Convert booking data to format expected by BookingCard
                   const service = services.find(s => s.id === booking.serviceId);
-                  const serviceName = service ? (currentLanguage === 'es' ? service.titleEs : service.titlePt) : 'Servicio';
+                  const serviceName = service ? service.title : 'Servicio';
                   
                   return (
                     <BookingCard

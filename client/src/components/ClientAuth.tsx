@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { User, Phone, Mail, LogIn, UserPlus } from "lucide-react";
+import type { User as UserType } from "@shared/schema";
 
 interface ClientAuthProps {
-  onAuthSuccess: (user: any) => void;
+  onAuthSuccess: (user: UserType) => void;
   currentLanguage: "es" | "pt";
 }
 
@@ -24,10 +25,11 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
       title: "Acceso de Cliente",
       subtitle: "Inicia sesión o regístrate para gestionar tus reservas",
       login: "Iniciar Sesión",
-      register: "Registrarse", 
+      register: "Registrarse",
       name: "Nombre completo",
       phone: "Teléfono (WhatsApp)",
       email: "Email (opcional)",
+      password: "Contraseña",
       loginWithPhone: "Ingresar con teléfono",
       loginWithEmail: "Ingresar con email",
       createAccount: "Crear cuenta",
@@ -39,16 +41,19 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
       registerButton: "Crear cuenta",
       phoneRequired: "Ingresa tu teléfono",
       nameRequired: "Ingresa tu nombre",
-      phoneFormat: "Formato: +595981234567"
+      passwordRequired: "Ingresa tu contraseña",
+      phoneFormat: "Formato: +595981234567",
+      passwordFormat: "Mínimo 8 caracteres, 1 número y 1 carácter especial"
     },
     pt: {
       title: "Acesso do Cliente",
       subtitle: "Faça login ou registre-se para gerenciar suas reservas",
       login: "Fazer Login",
       register: "Registrar-se",
-      name: "Nome completo", 
+      name: "Nome completo",
       phone: "Telefone (WhatsApp)",
       email: "Email (opcional)",
+      password: "Senha",
       loginWithPhone: "Entrar com telefone",
       loginWithEmail: "Entrar com email",
       createAccount: "Criar conta",
@@ -60,7 +65,9 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
       registerButton: "Criar conta",
       phoneRequired: "Digite seu telefone",
       nameRequired: "Digite seu nome",
-      phoneFormat: "Formato: +595981234567"
+      passwordRequired: "Digite sua senha",
+      phoneFormat: "Formato: +595981234567",
+      passwordFormat: "Mínimo 8 caracteres, 1 número e 1 caractere especial"
     }
   };
 
@@ -68,15 +75,34 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
 
   // Login mutation
   const loginMutation = useMutation({
-    mutationFn: async (data: { phone?: string; email?: string }) => {
-      return await apiRequest("/api/auth/login", "POST", data);
+    mutationFn: async (data: { email: string; password: string }) => {
+      try {
+        const res = await fetch("http://localhost:5000/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Error en el login");
+        }
+        return await res.json();
+      } catch (err) {
+        console.error("Login error:", err);
+        throw err;
+      }
     },
     onSuccess: (response) => {
+      console.log('🔐 ClientAuth: Login exitoso, respuesta:', response);
+      console.log('🔐 ClientAuth: Usuario:', response.user);
       toast({
         title: "✅ " + t.loginSuccess,
         description: `Hola ${response.user.name}`,
       });
-      queryClient.invalidateQueries();
+      console.log('🔐 ClientAuth: Invalidando queries...');
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      console.log('🔐 ClientAuth: Llamando onAuthSuccess...');
       onAuthSuccess(response.user);
     },
     onError: (error: any) => {
@@ -90,16 +116,41 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
 
   // Register mutation
   const registerMutation = useMutation({
-    mutationFn: async (data: { name: string; phone: string; email?: string }) => {
-      return await apiRequest("/api/auth/register", "POST", data);
+    mutationFn: async (data: { name: string; phone: string; email?: string; password: string }) => {
+      try {
+        const res = await fetch("http://localhost:5000/api/auth/register/client", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+          credentials: "include",
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || "Error en el registro");
+        }
+        return await res.json();
+      } catch (err) {
+        console.error("Register error:", err);
+        throw err;
+      }
     },
     onSuccess: (response) => {
+      console.log('🔐 ClientAuth: Registro exitoso, respuesta:', response);
+      console.log('🔐 ClientAuth: Usuario:', response.user);
       toast({
         title: "✅ " + t.registerSuccess,
         description: `Bienvenido ${response.user.name}`,
       });
-      queryClient.invalidateQueries();
+      console.log('🔐 ClientAuth: Invalidando queries...');
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      console.log('🔐 ClientAuth: Llamando onAuthSuccess...');
       onAuthSuccess(response.user);
+      // Force page reload to ensure authentication state is updated
+      console.log('🔐 ClientAuth: Recargando página...');
+      window.location.reload();
+      // Force page reload to ensure authentication state is updated
+      console.log('🔐 ClientAuth: Recargando página...');
+      window.location.reload();
     },
     onError: (error: any) => {
       toast({
@@ -111,20 +162,22 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
   });
 
   const handleLogin = (formData: FormData) => {
-    const phone = formData.get("phone") as string;
     const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-    if (!phone && !email) {
+    if (!email || !password) {
       toast({
         title: "❌ Error",
-        description: t.phoneRequired,
+        description: !email ? "Email es requerido" : t.passwordRequired,
         variant: "destructive",
       });
       return;
     }
 
+    console.log('🔐 ClientAuth: Intentando login con:', { email });
+
     setIsLoading(true);
-    loginMutation.mutate({ phone: phone || undefined, email: email || undefined });
+    loginMutation.mutate({ email, password });
     setIsLoading(false);
   };
 
@@ -132,11 +185,12 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
     const name = formData.get("name") as string;
     const phone = formData.get("phone") as string;
     const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-    if (!name || !phone) {
+    if (!name || !phone || !password) {
       toast({
-        title: "❌ Error", 
-        description: !name ? t.nameRequired : t.phoneRequired,
+        title: "❌ Error",
+        description: !name ? t.nameRequired : !phone ? t.phoneRequired : t.passwordRequired,
         variant: "destructive",
       });
       return;
@@ -146,7 +200,8 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
     registerMutation.mutate({
       name,
       phone,
-      email: email || undefined
+      email: email || undefined,
+      password
     });
     setIsLoading(false);
   };
@@ -177,36 +232,38 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
 
             {/* Login Tab */}
             <TabsContent value="login" className="space-y-4">
-              <form action={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-phone" className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    {t.phone}
-                  </Label>
-                  <Input
-                    id="login-phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="+595981234567"
-                    className="w-full"
-                    data-testid="input-login-phone"
-                  />
-                  <p className="text-xs text-muted-foreground">{t.phoneFormat}</p>
-                </div>
-
+              <form onSubmit={(e) => { e.preventDefault(); handleLogin(new FormData(e.currentTarget)); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email" className="flex items-center gap-2">
                     <Mail className="w-4 h-4" />
-                    {t.email}
+                    Email *
                   </Label>
                   <Input
                     id="login-email"
                     name="email"
                     type="email"
                     placeholder="tu@email.com"
-                    className="w-full"
+                    required
+                    className="w-full bg-white text-black"
                     data-testid="input-login-email"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="login-password" className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    {t.password} *
+                  </Label>
+                  <Input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    className="w-full bg-white text-black"
+                    data-testid="input-login-password"
+                  />
+                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial</p>
                 </div>
 
                 <Button
@@ -222,7 +279,7 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
 
             {/* Register Tab */}
             <TabsContent value="register" className="space-y-4">
-              <form action={handleRegister} className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); handleRegister(new FormData(e.currentTarget)); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="register-name" className="flex items-center gap-2">
                     <User className="w-4 h-4" />
@@ -234,7 +291,7 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
                     type="text"
                     placeholder="Juan Pérez"
                     required
-                    className="w-full"
+                    className="w-full bg-white text-black"
                     data-testid="input-register-name"
                   />
                 </div>
@@ -250,7 +307,7 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
                     type="tel"
                     placeholder="+595981234567"
                     required
-                    className="w-full"
+                    className="w-full bg-white text-black"
                     data-testid="input-register-phone"
                   />
                   <p className="text-xs text-muted-foreground">{t.phoneFormat}</p>
@@ -266,9 +323,26 @@ export default function ClientAuth({ onAuthSuccess, currentLanguage }: ClientAut
                     name="email"
                     type="email"
                     placeholder="tu@email.com"
-                    className="w-full"
+                    className="w-full bg-white text-black"
                     data-testid="input-register-email"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="register-password" className="flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    {t.password} *
+                  </Label>
+                  <Input
+                    id="register-password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    required
+                    className="w-full bg-white text-black"
+                    data-testid="input-register-password"
+                  />
+                  <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial</p>
                 </div>
 
                 <Button

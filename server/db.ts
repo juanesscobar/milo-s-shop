@@ -9,8 +9,5 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Extract the file path from DATABASE_URL (e.g., "file:./milos_shop.db" -> "./milos_shop.db")
-const dbPath = process.env.DATABASE_URL.replace('file:', '');
-
-export const sqlite = new Database(dbPath);
+const sqlite = new Database(process.env.DATABASE_URL.replace('file:', ''));
 export const db = drizzle({ client: sqlite, schema });

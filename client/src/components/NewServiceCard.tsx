@@ -17,9 +17,9 @@ export default function NewServiceCard({
   language,
   onReserve
 }: NewServiceCardProps) {
-  const title = language === 'es' ? service.titleEs : service.titlePt;
-  const subtitle = language === 'es' ? service.subtitleEs : service.subtitlePt;
-  const copy = language === 'es' ? service.copyEs : service.copyPt;
+  const title = service.title;
+  const subtitle = service.description;
+  const copy = null; // No additional copy for now
   
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-PY', {
@@ -30,7 +30,7 @@ export default function NewServiceCard({
   };
 
   const getPrice = () => {
-    if (!selectedVehicleType) return null;
+    if (!selectedVehicleType || !service.prices) return null;
     return service.prices[selectedVehicleType];
   };
 
@@ -53,17 +53,9 @@ export default function NewServiceCard({
       data-testid={`card-service-${service.slug}`}
     >
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-lg font-bold text-foreground leading-tight">
-            {title}
-          </CardTitle>
-          {service.durationMin && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-              <Clock className="h-3 w-3" />
-              <span>{service.durationMin} min</span>
-            </div>
-          )}
-        </div>
+        <CardTitle className="text-lg font-bold text-foreground leading-tight">
+          {title}
+        </CardTitle>
         
         {/* Descrição em cinza claro */}
         <p className="text-sm text-gray-400 mt-2 leading-relaxed">

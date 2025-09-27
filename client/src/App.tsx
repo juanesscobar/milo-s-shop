@@ -17,6 +17,7 @@ function HomePage() {
 }
 
 function ClientePage() {
+  console.log('🔐 App: Renderizando ClientePage');
   return <ClienteApp language="es" />;
 }
 

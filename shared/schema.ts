@@ -7,8 +7,9 @@ import { z } from "zod";
 export const users = sqliteTable("users", {
   id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
   name: text("name").notNull(),
-  phone: text("phone").notNull().unique(),
+  phone: text("phone").notNull(),
   email: text("email"),
+  password: text("password"),
   role: text("role").notNull().default("client"),
   language: text("language").notNull().default("es"),
   isGuest: integer("is_guest", { mode: 'boolean' }).default(true).notNull(),
@@ -127,31 +128,13 @@ export const auditLog = sqliteTable("audit_log", {
 export const usersRelations = relations(users, ({ many }) => ({
   vehicles: many(vehicles),
   bookings: many(bookings),
-  adminSessions: many(adminSessions),
 }));
 
-export const otpTokensRelations = relations(otpTokens, ({ }) => ({}));
-
-export const magicLinksRelations = relations(magicLinks, ({ one }) => ({
-  booking: one(bookings, {
-    fields: [magicLinks.bookingId],
-    references: [bookings.id],
-  }),
-}));
-
-export const adminSessionsRelations = relations(adminSessions, ({ one }) => ({
-  user: one(users, {
-    fields: [adminSessions.userId],
-    references: [users.id],
-  }),
-}));
-
-export const vehiclesRelations = relations(vehicles, ({ one, many }) => ({
+export const vehiclesRelations = relations(vehicles, ({ one }) => ({
   user: one(users, {
     fields: [vehicles.userId],
     references: [users.id],
   }),
-  bookings: many(bookings),
 }));
 
 export const servicesRelations = relations(services, ({ many }) => ({
@@ -163,24 +146,9 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
     fields: [bookings.userId],
     references: [users.id],
   }),
-  vehicle: one(vehicles, {
-    fields: [bookings.vehicleId],
-    references: [vehicles.id],
-  }),
   service: one(services, {
     fields: [bookings.serviceId],
     references: [services.id],
-  }),
-  payment: one(payments, {
-    fields: [bookings.id],
-    references: [payments.bookingId],
-  }),
-}));
-
-export const paymentsRelations = relations(payments, ({ one }) => ({
-  booking: one(bookings, {
-    fields: [payments.bookingId],
-    references: [bookings.id],
   }),
 }));
 
@@ -203,41 +171,6 @@ export const insertServiceSchema = createInsertSchema(services).omit({
 export const insertBookingSchema = createInsertSchema(bookings).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
-});
-
-export const insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertOrganizationSchema = createInsertSchema(organization).omit({
-  id: true,
-  updatedAt: true,
-});
-
-export const insertOtpTokenSchema = createInsertSchema(otpTokens).omit({
-  id: true,
-  verified: true,
-  attempts: true,
-  createdAt: true,
-});
-
-export const insertMagicLinkSchema = createInsertSchema(magicLinks).omit({
-  id: true,
-  usedAt: true,
-  createdAt: true,
-});
-
-export const insertAdminSessionSchema = createInsertSchema(adminSessions).omit({
-  id: true,
-  lastActivity: true,
-  createdAt: true,
-});
-
-export const insertAuditLogSchema = createInsertSchema(auditLog).omit({
-  id: true,
-  timestamp: true,
 });
 
 // Types
@@ -249,15 +182,3 @@ export type InsertService = z.infer<typeof insertServiceSchema>;
 export type Service = typeof services.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
 export type Booking = typeof bookings.$inferSelect;
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
-export type Payment = typeof payments.$inferSelect;
-export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
-export type Organization = typeof organization.$inferSelect;
-export type InsertOtpToken = z.infer<typeof insertOtpTokenSchema>;
-export type OtpToken = typeof otpTokens.$inferSelect;
-export type InsertMagicLink = z.infer<typeof insertMagicLinkSchema>;
-export type MagicLink = typeof magicLinks.$inferSelect;
-export type InsertAdminSession = z.infer<typeof insertAdminSessionSchema>;
-export type AdminSession = typeof adminSessions.$inferSelect;
-export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
-export type AuditLog = typeof auditLog.$inferSelect;

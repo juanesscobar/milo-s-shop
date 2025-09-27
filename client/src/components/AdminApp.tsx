@@ -14,7 +14,7 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { joinAdminRoom, disconnect } = useWebSocket();
+  const { joinAdminRoom, disconnect, isConnected } = useWebSocket();
 
   // Initialize WebSocket connection for real-time updates
   useEffect(() => {
@@ -28,15 +28,24 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   }, [joinAdminRoom, disconnect]);
 
   // Fetch today's bookings from backend
-  const { data: bookings = [], isLoading, error } = useQuery({
+  const { data: rawBookings = [], isLoading, error } = useQuery({
     queryKey: ['/api/bookings/today'],
-    select: (data: any[]) => data.map((booking: any) => ({
-      ...booking,
-      // Use the flat fields returned by API (from joins)
-      serviceName: booking.serviceName || 'Servicio desconocido',
-      vehiclePlate: booking.vehiclePlate || 'Placa desconocida'
-    }))
+    retry: 3,
+    retryDelay: 1000,
+    enabled: isConnected,
+    select: (data: any[]) => data,
   });
+
+  // Transform bookings data
+  const bookings = rawBookings.map((booking: any) => ({
+    ...booking,
+    // Use the flat fields returned by API (from joins)
+    serviceName: booking.serviceName || 'Servicio desconocido',
+    vehiclePlate: booking.vehiclePlate || 'Placa desconocida'
+  }));
+
+  // Debug logs
+  console.log('AdminApp query state:', { isLoading, error: error?.message, bookingsCount: bookings.length });
 
   // Calculate stats based on real data
   const stats = {

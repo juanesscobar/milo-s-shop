@@ -15,11 +15,14 @@ export function useAuth() {
   const queryClient = useQueryClient();
 
   // Get current authenticated user
-  const { data: user, isLoading, error } = useQuery({
+  const { data: userData, isLoading, error } = useQuery<{ user: User } | null>({
     queryKey: ["/api/auth/me"],
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  console.log('🔐 useAuth: Estado actual - user:', userData?.user, 'isLoading:', isLoading, 'error:', error);
+  console.log('🔐 useAuth: isAuthenticated:', !!userData?.user && !error);
 
   // Logout mutation
   const logoutMutation = useMutation({
@@ -32,12 +35,12 @@ export function useAuth() {
     },
   });
 
-  const isAuthenticated = !!user && !error;
-  const isAdmin = user?.user?.role === 'admin' || user?.user?.role === 'operator';
-  const isClient = user?.user?.role === 'client';
+  const isAuthenticated = !!userData?.user && !error;
+  const isAdmin = userData?.user?.role === 'admin' || userData?.user?.role === 'operator';
+  const isClient = userData?.user?.role === 'client';
 
   return {
-    user: user?.user as User | undefined,
+    user: userData?.user as User | undefined,
     isLoading,
     isAuthenticated,
     isAdmin,
