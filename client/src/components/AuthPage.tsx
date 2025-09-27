@@ -36,7 +36,8 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
     companyName: userType === 'admin' ? 'Mi Empresa' : '',
     phone: '',
     email: '',
-    password: ''
+    password: '',
+    passwordConfirm: ''
   });
 
   const content: Record<string, any> = {
@@ -140,7 +141,7 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registerData.name || !registerData.email || !registerData.password) {
+    if (!registerData.name || !registerData.email || !registerData.password || !registerData.passwordConfirm) {
       toast({
         title: '❌ Datos incompletos',
         description: 'Por favor completa todos los campos requeridos',
@@ -152,6 +153,14 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
       toast({
         title: '❌ Contraseña muy corta',
         description: t.passwordMin,
+        variant: 'destructive',
+      });
+      return;
+    }
+    if (registerData.password !== registerData.passwordConfirm) {
+      toast({
+        title: '❌ Contraseñas no coinciden',
+        description: 'La contraseña y su confirmación deben ser iguales',
         variant: 'destructive',
       });
       return;
@@ -288,6 +297,18 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
                       type="password"
                       value={registerData.password}
                       onChange={(e) => setRegisterData(prev => ({ ...prev, password: e.target.value }))}
+                      placeholder="••••••••"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="register-password-confirm">Confirmar {t.password.toLowerCase()}</Label>
+                    <Input
+                      id="register-password-confirm"
+                      type="password"
+                      value={registerData.passwordConfirm}
+                      onChange={(e) => setRegisterData(prev => ({ ...prev, passwordConfirm: e.target.value }))}
                       placeholder="••••••••"
                       required
                     />

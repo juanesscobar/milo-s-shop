@@ -48,10 +48,22 @@ export default function NewServiceCard({
   const vehicleName = selectedVehicleType ? vehicleNames[language][selectedVehicleType] : '';
 
   return (
-    <Card 
+    <Card
       className="w-full hover-elevate"
       data-testid={`card-service-${service.slug}`}
     >
+      {/* Service Image */}
+      {service.imageUrl && (
+        <div className="w-full h-40 bg-muted rounded-t-lg overflow-hidden">
+          <img
+            src={service.imageUrl}
+            alt={title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      )}
+
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-bold text-foreground leading-tight">
           {title}

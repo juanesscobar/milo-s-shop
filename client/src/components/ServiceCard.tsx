@@ -20,9 +20,9 @@ export default function ServiceCard({
 }: ServiceCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const title = language === 'es' ? service.titleEs : service.titlePt;
-  const subtitle = language === 'es' ? service.subtitleEs : service.subtitlePt;
-  const copy = language === 'es' ? service.copyEs : service.copyPt;
+  const title = service.title;
+  const subtitle = service.description;
+  const copy = null; // No additional copy for now
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-PY', {
@@ -108,12 +108,6 @@ export default function ServiceCard({
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           {title}
-          {service.durationMin && (
-            <Badge variant="secondary" className="text-xs">
-              <Clock className="h-3 w-3 mr-1" />
-              {service.durationMin} min
-            </Badge>
-          )}
         </CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
           {subtitle}
@@ -123,19 +117,19 @@ export default function ServiceCard({
       
       <CardContent className="pb-4 space-y-2">
         <div className="space-y-1">
-          {service.prices.auto != null && (
+          {service.prices?.auto != null && (
             <div className="flex justify-between items-center">
               <span className="text-sm">{t.auto}</span>
               <span className="font-bold">{formatPrice(service.prices.auto)}</span>
             </div>
           )}
-          {service.prices.suv != null && (
+          {service.prices?.suv != null && (
             <div className="flex justify-between items-center">
               <span className="text-sm">{t.suv}</span>
               <span className="font-bold">{formatPrice(service.prices.suv)}</span>
             </div>
           )}
-          {service.prices.camioneta != null && (
+          {service.prices?.camioneta != null && (
             <div className="flex justify-between items-center">
               <span className="text-sm">{t.camioneta}</span>
               <span className="font-bold">{formatPrice(service.prices.camioneta)}</span>

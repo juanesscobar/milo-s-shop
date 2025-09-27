@@ -2,17 +2,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import LanguageToggle from "./LanguageToggle";
-import { 
-  Droplets, 
-  Clock, 
-  Shield, 
-  Star, 
-  MapPin, 
-  Phone, 
+import {
+  Droplets,
+  Clock,
+  Shield,
+  Star,
+  MapPin,
+  Phone,
   MessageCircle,
   Car,
   CheckCircle
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { Service } from "@shared/schema";
 
 interface LandingPageProps {
   currentLanguage: 'es' | 'pt';
@@ -21,12 +23,23 @@ interface LandingPageProps {
   onLogin: () => void;
 }
 
-export default function LandingPage({ 
-  currentLanguage, 
-  onLanguageChange, 
-  onBookNow, 
-  onLogin 
+export default function LandingPage({
+  currentLanguage,
+  onLanguageChange,
+  onBookNow,
+  onLogin
 }: LandingPageProps) {
+  // Fetch services from API
+  const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
+    queryKey: ['services'],
+    queryFn: async () => {
+      const res = await fetch('/api/services');
+      if (!res.ok) throw new Error('Failed to fetch services');
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
   const content = {
     es: {
       title: "Lavadero Moderno",
@@ -88,23 +101,37 @@ export default function LandingPage({
 
   const t = content[currentLanguage];
 
-  const services = [
+  // Transform services from API to landing page format
+  const landingServices = services.slice(0, 3).map(service => ({
+    name: service.title,
+    price: service.prices?.auto ? `${service.prices.auto.toLocaleString()} Gs` : "Consultar",
+    features: service.description.split('. ').slice(0, 2), // Split description into features
+    imageUrl: service.imageUrl
+  }));
+
+  // Fallback services if API fails
+  const fallbackServices = [
     {
       name: currentLanguage === 'es' ? "Ducha y aspirado" : "Lavagem e aspiração",
       price: "50.000 Gs",
-      features: ["Shampoo V-Floc", "Aspirado completo"]
+      features: ["Shampoo V-Floc", "Aspirado completo"],
+      imageUrl: null
     },
     {
-      name: currentLanguage === 'es' ? "Lavado + encerado" : "Lavagem + enceramento", 
+      name: currentLanguage === 'es' ? "Lavado + encerado" : "Lavagem + enceramento",
       price: "70.000 Gs",
-      features: ["Shampoo V-Floc", "Cera carnauba Plus", "Cera Native carnauba"]
+      features: ["Shampoo V-Floc", "Cera carnauba Plus", "Cera Native carnauba"],
+      imageUrl: null
     },
     {
       name: currentLanguage === 'es' ? "Pulida Comercial" : "Polimento Comercial",
-      price: "300.000 Gs", 
-      features: ["Lavado completo", "Pulida 2 pasos", "Protección 1 año"]
+      price: "300.000 Gs",
+      features: ["Lavado completo", "Pulida 2 pasos", "Protección 1 año"],
+      imageUrl: null
     }
   ];
+
+  const displayServices = servicesLoading || services.length === 0 ? fallbackServices : landingServices;
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,8 +207,19 @@ export default function LandingPage({
         <div className="container max-w-6xl">
           <h2 className="text-3xl font-bold text-center mb-12">{t.services}</h2>
           <div className="grid md:grid-cols-3 gap-6">
-            {services.map((service, index) => (
+            {displayServices.map((service, index) => (
               <Card key={index} className="hover-elevate">
+                {/* Service Image */}
+                {service.imageUrl && (
+                  <div className="w-full h-32 bg-muted rounded-t-lg overflow-hidden">
+                    <img
+                      src={service.imageUrl}
+                      alt={service.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
                 <CardHeader>
                   <CardTitle className="text-xl">{service.name}</CardTitle>
                   <div className="text-2xl font-bold text-primary">{service.price}</div>
