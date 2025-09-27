@@ -103,6 +103,12 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   const handleViewDetails = (bookingId: string) => {
     const booking = bookings.find((b: any) => b.id === bookingId);
     if (booking) {
+      // If there's a payment capture, open it in a new window
+      if (booking.paymentCaptureUrl) {
+        window.open(booking.paymentCaptureUrl, '_blank');
+        return;
+      }
+
       // Show booking details in alert for now - can be replaced with modal later
       const details = [
         `ID: ${booking.id}`,
@@ -112,7 +118,8 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
         `Hora: ${booking.timeSlot}`,
         `Precio: ${new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(booking.price)}`,
         `Método de pago: ${booking.paymentMethod || 'No definido'}`,
-        `Estado del pago: ${booking.paymentStatus || 'No definido'}`
+        `Estado del pago: ${booking.paymentStatus || 'No definido'}`,
+        ...(booking.paymentCaptureUrl ? ['Captura de pago: Disponible'] : [])
       ].join('\n');
       alert(details);
     }

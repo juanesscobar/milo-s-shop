@@ -1,3 +1,17 @@
+/**
+ * Definición de rutas de la API para Milos-Shop
+ *
+ * Este archivo contiene todas las rutas de la API REST, incluyendo:
+ * - Gestión de servicios de lavado
+ * - Autenticación de usuarios
+ * - Gestión de vehículos
+ * - Sistema de reservas
+ * - Procesamiento de pagos
+ * - WebSockets para actualizaciones en tiempo real
+ *
+ * Todas las rutas incluyen validación de entrada con Zod y manejo de errores.
+ */
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
@@ -7,12 +21,52 @@ import fs from 'fs';
 import { storage } from "./storage";
 import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, insertPaymentSchema } from "@shared/schema";
 import { z } from "zod";
+import { ImageOptimizer } from './imageOptimizer';
 
+// Extender la interfaz de Session para incluir nuestras propiedades personalizadas
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;      // ID del usuario autenticado
+    userRole?: string;    // Rol del usuario (client, admin, operator)
+  }
+}
+
+// Cache simple en memoria para servicios
+const servicesCache = {
+  data: null as any[] | null,
+  timestamp: 0,
+  ttl: 5 * 60 * 1000 // 5 minutos
+};
+
+/**
+ * Registra todas las rutas de la API en la aplicación Express
+ *
+ * Esta función configura:
+ * - Rutas REST para servicios, usuarios, vehículos, reservas y pagos
+ * - Middleware de subida de archivos con Multer
+ * - Servidor WebSocket con Socket.IO para actualizaciones en tiempo real
+ * - Autenticación básica para el panel de administración
+ *
+ * @param app - Instancia de Express donde registrar las rutas
+ * @returns Promise<Server> - Servidor HTTP configurado con WebSockets
+ */
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Services API
+  // ===== API DE SERVICIOS =====
+  // Obtener lista de todos los servicios disponibles con cache
   app.get("/api/services", async (req, res) => {
     try {
+      // Verificar cache
+      const now = Date.now();
+      if (servicesCache.data && (now - servicesCache.timestamp) < servicesCache.ttl) {
+        return res.json(servicesCache.data);
+      }
+
       const services = await storage.getAllServices();
+
+      // Actualizar cache
+      servicesCache.data = services;
+      servicesCache.timestamp = now;
+
       res.json(services);
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -33,7 +87,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Users API
+  // ===== API DE USUARIOS =====
+  // Crear nuevo usuario (usado internamente por el sistema)
   app.post("/api/users", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
@@ -68,7 +123,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Client Authentication API
+  // ===== API DE AUTENTICACIÓN =====
+  // Registro de nuevos usuarios clientes
   app.post("/api/auth/register", async (req, res) => {
     try {
       const { name, phone, email } = req.body;
@@ -171,7 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Vehicles API
+  // ===== API DE VEHÍCULOS =====
+  // Obtener vehículos de un usuario específico
   app.get("/api/users/:userId/vehicles", async (req, res) => {
     try {
       const vehicles = await storage.getUserVehicles(req.params.userId);
@@ -196,7 +253,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Bookings API - Protected for authenticated users
+  // ===== API DE RESERVAS =====
+  // Obtener reservas (protegido - requiere autenticación)
   app.get("/api/bookings", async (req, res) => {
     try {
       // Check authentication
@@ -257,12 +315,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate price matches service pricing for vehicle type
-      const expectedPrice = service.prices[vehicle.type];
+      const vehicleType = vehicle.type as 'auto' | 'suv' | 'camioneta';
+      const expectedPrice = service.prices[vehicleType];
       if (!expectedPrice || bookingData.price !== expectedPrice) {
-        return res.status(400).json({ 
-          error: "Price mismatch", 
-          expected: expectedPrice, 
-          provided: bookingData.price 
+        return res.status(400).json({
+          error: "Price mismatch",
+          expected: expectedPrice,
+          provided: bookingData.price
         });
       }
       
@@ -322,7 +381,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Payments API
+  // ===== API DE PAGOS =====
+  // Crear nuevo pago para una reserva
   app.post("/api/payments", async (req, res) => {
     try {
       const paymentData = insertPaymentSchema.parse(req.body);
@@ -402,23 +462,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!req.file) {
         return res.status(400).json({ error: 'No image file uploaded' });
       }
-      
+
       const { serviceSlug } = req.body;
       if (!serviceSlug) {
         return res.status(400).json({ error: 'Service slug is required' });
       }
-      
-      // Store image path relative to attached_assets
-      const imagePath = `service_images/${req.file.filename}`;
-      
+
+      // Original file path
+      const originalPath = req.file.path;
+      const fileExt = path.extname(req.file.originalname).toLowerCase();
+      const baseName = path.basename(req.file.filename, fileExt);
+
+      // Optimized file path
+      const optimizedFilename = `${baseName}_optimized${fileExt}`;
+      const optimizedPath = path.join(uploadDir, optimizedFilename);
+
+      // Optimize the image
+      await ImageOptimizer.optimizeImage(originalPath, optimizedPath, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 80,
+        format: fileExt === '.png' ? 'png' : 'jpeg'
+      });
+
+      // Remove original file after optimization
+      fs.unlinkSync(originalPath);
+
+      // Store optimized image path relative to attached_assets
+      const imagePath = `service_images/${optimizedFilename}`;
+
       // TODO: Update service record with image path if needed
       // For now, just return success with file info
-      
+
       res.json({
         success: true,
-        message: 'Image uploaded successfully',
+        message: 'Image uploaded and optimized successfully',
         imageUrl: `/attached_assets/${imagePath}`,
-        filename: req.file.filename,
+        filename: optimizedFilename,
         serviceSlug
       });
     } catch (error) {
@@ -427,9 +507,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== MONITORING Y HEALTH CHECKS =====
+  // Health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: process.version
+    });
+  });
+
+  // Basic metrics endpoint
+  app.get("/api/metrics", (req, res) => {
+    const metrics = {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage(),
+      timestamp: new Date().toISOString(),
+      servicesCache: {
+        size: servicesCache.data?.length || 0,
+        lastUpdated: servicesCache.timestamp ? new Date(servicesCache.timestamp).toISOString() : null
+      }
+    };
+    res.json(metrics);
+  });
+
+  // ===== CONFIGURACIÓN DE WEBSOCKETS =====
+  // Crear servidor HTTP para WebSockets
   const httpServer = createServer(app);
 
-  // Initialize Socket.IO for real-time updates
+  // Inicializar Socket.IO para actualizaciones en tiempo real en el panel de administración
   const io = new SocketIOServer(httpServer, {
     cors: {
       origin: "*",

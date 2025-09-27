@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, Car, CreditCard, Phone, User, ArrowLeft } from "lucide-react";
+import { Calendar, Clock, Car, CreditCard, Phone, User, ArrowLeft, Upload, X } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +28,12 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
     timeSlot: '',
     notes: ''
   });
+  const [paymentData, setPaymentData] = useState({
+    paymentMethod: 'cash' as 'cash' | 'transfer' | 'pix',
+    paymentCaptureUrl: ''
+  });
+  const [paymentCaptureFile, setPaymentCaptureFile] = useState<File | null>(null);
+  const [paymentCapturePreview, setPaymentCapturePreview] = useState<string>('');
   const [userForm, setUserForm] = useState({
     name: '',
     phone: '',
@@ -45,9 +51,15 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
     es: {
       title: "Reservar Servicio",
       userInfo: "Información Personal",
-      vehicleInfo: "Información del Vehículo", 
+      vehicleInfo: "Información del Vehículo",
       bookingDetails: "Detalles de la Reserva",
       payment: "Pago",
+      paymentMethod: "Método de pago",
+      cash: "Efectivo",
+      transfer: "Transferencia",
+      pix: "PIX",
+      paymentCapture: "Captura de pago (opcional)",
+      uploadCapture: "Subir captura",
       name: "Nombre completo",
       phone: "Teléfono",
       email: "Email (opcional)",
@@ -61,7 +73,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
       continue: "Continuar",
       confirm: "Confirmar Reserva",
       auto: "Auto",
-      suv: "SUV", 
+      suv: "SUV",
       camioneta: "Camioneta",
       bookingSuccess: "¡Reserva creada exitosamente!",
       bookingError: "Error al crear la reserva"
@@ -70,8 +82,14 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
       title: "Reservar Serviço",
       userInfo: "Informações Pessoais",
       vehicleInfo: "Informações do Veículo",
-      bookingDetails: "Detalhes da Reserva", 
+      bookingDetails: "Detalhes da Reserva",
       payment: "Pagamento",
+      paymentMethod: "Método de pagamento",
+      cash: "Dinheiro",
+      transfer: "Transferência",
+      pix: "PIX",
+      paymentCapture: "Captura de pagamento (opcional)",
+      uploadCapture: "Enviar captura",
       name: "Nome completo",
       phone: "Telefone",
       email: "Email (opcional)",
@@ -237,10 +255,64 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
     if (!bookingData.date || !bookingData.timeSlot) {
       toast({
         title: "Error",
-        description: "Fecha y hora son requeridas", 
+        description: "Fecha y hora son requeridas",
         variant: "destructive",
       });
       return;
+    }
+
+    setStep('payment');
+  };
+
+  const handlePaymentCaptureUpload = async (file: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('serviceSlug', 'payment-capture');
+
+      const response = await fetch('/api/services/upload-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setPaymentData(prev => ({ ...prev, paymentCaptureUrl: result.imageUrl }));
+        setPaymentCapturePreview(result.imageUrl);
+        toast({
+          title: "Éxito",
+          description: "Captura de pago subida correctamente",
+        });
+      } else {
+        throw new Error('Error al subir la captura');
+      }
+    } catch (error) {
+      console.error('Error uploading payment capture:', error);
+      toast({
+        title: "Error",
+        description: "Error al subir la captura de pago",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePaymentCaptureChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setPaymentCaptureFile(file);
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPaymentCapturePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePaymentSubmit = async () => {
+    // Upload payment capture if exists
+    if (paymentCaptureFile && !paymentData.paymentCaptureUrl) {
+      await handlePaymentCaptureUpload(paymentCaptureFile);
     }
 
     createBookingMutation.mutate({
@@ -250,6 +322,8 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
       date: bookingData.date,
       timeSlot: bookingData.timeSlot,
       price: servicePrice,
+      paymentMethod: paymentData.paymentMethod,
+      paymentCaptureUrl: paymentData.paymentCaptureUrl || undefined,
       notes: bookingData.notes || undefined
     });
   };
@@ -465,6 +539,99 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
               disabled={createBookingMutation.isPending}
               data-testid="button-confirm-booking"
+            >
+              {createBookingMutation.isPending ? "..." : t.confirm}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {step === 'payment' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              {t.payment}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="paymentMethod">{t.paymentMethod}</Label>
+              <Select
+                value={paymentData.paymentMethod}
+                onValueChange={(value: 'cash' | 'transfer' | 'pix') =>
+                  setPaymentData(prev => ({ ...prev, paymentMethod: value }))
+                }
+              >
+                <SelectTrigger className="bg-white text-gray-900" data-testid="select-payment-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">{t.cash}</SelectItem>
+                  <SelectItem value="transfer">{t.transfer}</SelectItem>
+                  <SelectItem value="pix">{t.pix}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>{t.paymentCapture}</Label>
+              <div className="mt-2">
+                {paymentCapturePreview ? (
+                  <div className="relative inline-block">
+                    <img
+                      src={paymentCapturePreview}
+                      alt="Captura de pago"
+                      className="max-w-48 max-h-32 object-contain border rounded"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                      onClick={() => {
+                        setPaymentCapturePreview('');
+                        setPaymentCaptureFile(null);
+                        setPaymentData(prev => ({ ...prev, paymentCaptureUrl: '' }));
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePaymentCaptureChange}
+                      className="hidden"
+                      id="payment-capture"
+                    />
+                    <label htmlFor="payment-capture" className="cursor-pointer">
+                      <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">{t.uploadCapture}</p>
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 bg-muted rounded-lg">
+              <div className="flex justify-between items-center">
+                <span className="font-semibold">{t.total}:</span>
+                <span className="text-2xl font-bold text-primary">{formatPrice(servicePrice)}</span>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setStep('booking')} data-testid="button-back-payment">
+              {t.back}
+            </Button>
+            <Button
+              onClick={handlePaymentSubmit}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2"
+              disabled={createBookingMutation.isPending}
+              data-testid="button-confirm-payment"
             >
               {createBookingMutation.isPending ? "..." : t.confirm}
             </Button>

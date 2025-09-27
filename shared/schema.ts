@@ -1,33 +1,33 @@
 import { sql, relations } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, jsonb, decimal } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+// Users table ##esta funcion o esquema es para la lectura de la base de datos
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
   name: text("name").notNull(),
   phone: text("phone").notNull().unique(),
   email: text("email"),
-  role: text("role", { enum: ["client", "admin", "operator"] }).notNull().default("client"),
-  language: text("language", { enum: ["es", "pt"] }).notNull().default("es"),
-  isGuest: boolean("is_guest").default(true).notNull(),
-  preferences: jsonb("preferences").$type<{favoriteServices?: string[]; preferredTime?: string; notifications?: boolean}>(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  role: text("role").notNull().default("client"),
+  language: text("language").notNull().default("es"),
+  isGuest: integer("is_guest", { mode: 'boolean' }).default(true).notNull(),
+  preferences: text("preferences", { mode: 'json' }).$type<{favoriteServices?: string[]; preferredTime?: string; notifications?: boolean}>(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Vehicles table
-export const vehicles = pgTable("vehicles", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
+export const vehicles = sqliteTable("vehicles", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  userId: text("user_id").notNull().references(() => users.id),
   plate: text("plate").notNull(),
-  type: text("type", { enum: ["auto", "suv", "camioneta"] }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  type: text("type").notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Services table
-export const services = pgTable("services", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const services = sqliteTable("services", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
   slug: text("slug").notNull().unique(),
   nameKey: text("name_key").notNull().unique(),
   title: text("title").notNull(),
@@ -38,87 +38,89 @@ export const services = pgTable("services", {
   subtitlePt: text("subtitle_pt").notNull(),
   copyEs: text("copy_es").notNull(),
   copyPt: text("copy_pt").notNull(),
-  prices: jsonb("prices").notNull().$type<{auto?: number; suv?: number; camioneta?: number}>(),
+  prices: text("prices", { mode: 'json' }).notNull().$type<{auto?: number; suv?: number; camioneta?: number}>(),
   durationMin: integer("duration_min"),
   imageUrl: text("image_url"),
-  active: boolean("active").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  active: integer("active", { mode: 'boolean' }).default(true).notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Bookings table
-export const bookings = pgTable("bookings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
-  vehicleId: varchar("vehicle_id").notNull().references(() => vehicles.id),
-  serviceId: varchar("service_id").notNull().references(() => services.id),
+export const bookings = sqliteTable("bookings", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  userId: text("user_id").notNull().references(() => users.id),
+  vehicleId: text("vehicle_id").notNull().references(() => vehicles.id),
+  serviceId: text("service_id").notNull().references(() => services.id),
   date: text("date").notNull(),
   timeSlot: text("time_slot").notNull(),
-  status: text("status", { enum: ["waiting", "washing", "done", "cancelled"] }).notNull().default("waiting"),
+  status: text("status").notNull().default("waiting"),
   price: integer("price").notNull(),
+  paymentMethod: text("payment_method").default("cash"),
+  paymentCaptureUrl: text("payment_capture_url"),
   notes: text("notes"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Payments table
-export const payments = pgTable("payments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  bookingId: varchar("booking_id").notNull().references(() => bookings.id),
-  method: text("method", { enum: ["card", "pix", "cash"] }).notNull(),
+export const payments = sqliteTable("payments", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  bookingId: text("booking_id").notNull().references(() => bookings.id),
+  method: text("method").notNull(),
   amountGs: integer("amount_gs").notNull(),
-  status: text("status", { enum: ["pending", "paid", "failed"] }).notNull().default("pending"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Organization settings table
-export const organization = pgTable("organization", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  openingHours: jsonb("opening_hours"),
+export const organization = sqliteTable("organization", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  openingHours: text("opening_hours", { mode: 'json' }),
   address: text("address"),
   whatsapp: text("whatsapp"),
-  gallery: jsonb("gallery").$type<string[]>(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  gallery: text("gallery", { mode: 'json' }).$type<string[]>(),
+  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // OTP tokens table for passwordless authentication
-export const otpTokens = pgTable("otp_tokens", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const otpTokens = sqliteTable("otp_tokens", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
   phone: text("phone").notNull(),
   code: text("code").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  verified: boolean("verified").default(false).notNull(),
+  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
+  verified: integer("verified", { mode: 'boolean' }).default(false).notNull(),
   attempts: integer("attempts").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Magic links table for booking management
-export const magicLinks = pgTable("magic_links", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const magicLinks = sqliteTable("magic_links", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
   token: text("token").notNull().unique(),
-  bookingId: varchar("booking_id").notNull().references(() => bookings.id),
-  expiresAt: timestamp("expires_at").notNull(),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  bookingId: text("booking_id").notNull().references(() => bookings.id),
+  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
+  usedAt: integer("used_at", { mode: 'timestamp' }),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Admin sessions table
-export const adminSessions = pgTable("admin_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id),
+export const adminSessions = sqliteTable("admin_sessions", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  userId: text("user_id").notNull().references(() => users.id),
   token: text("token").notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  lastActivity: timestamp("last_activity").defaultNow().notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
+  lastActivity: integer("last_activity", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Audit log table
-export const auditLog = pgTable("audit_log", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  actorUserId: varchar("actor_user_id").references(() => users.id),
+export const auditLog = sqliteTable("audit_log", {
+  id: text("id").primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+  actorUserId: text("actor_user_id").references(() => users.id),
   action: text("action").notNull(),
   targetRef: text("target_ref"),
-  metadata: jsonb("metadata"),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: text("metadata", { mode: 'json' }),
+  timestamp: integer("timestamp", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
 // Relations

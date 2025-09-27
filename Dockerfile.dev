@@ -1,0 +1,33 @@
+# Dockerfile de desarrollo para Milos-Shop
+FROM node:18-alpine
+
+# Instalar dependencias del sistema
+RUN apk add --no-cache python3 make g++ sqlite
+
+# Crear usuario no-root
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S milosdev -u 1001
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Cambiar propietario del directorio
+RUN chown milosdev:nodejs /app
+USER milosdev
+
+# Copiar archivos de configuración
+COPY --chown=milosdev:nodejs package*.json ./
+COPY --chown=milosdev:nodejs tsconfig.json ./
+COPY --chown=milosdev:nodejs drizzle.config.ts ./
+
+# Instalar dependencias
+RUN npm ci
+
+# Copiar código fuente
+COPY --chown=milosdev:nodejs . .
+
+# Exponer puerto de desarrollo
+EXPOSE 5001
+
+# Comando por defecto
+CMD ["npm", "run", "dev"]

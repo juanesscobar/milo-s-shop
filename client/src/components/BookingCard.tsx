@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "./StatusBadge";
-import { Car, Calendar, Clock, CreditCard } from "lucide-react";
+import { Car, Calendar, Clock, CreditCard, Image } from "lucide-react";
 
 interface BookingCardProps {
   id: string;
@@ -12,14 +12,15 @@ interface BookingCardProps {
   timeSlot: string;
   status: 'waiting' | 'washing' | 'done' | 'cancelled';
   price: number;
-  paymentMethod?: 'card' | 'pix' | 'cash';
+  paymentMethod?: 'cash' | 'transfer' | 'pix';
   paymentStatus?: 'pending' | 'paid' | 'failed';
+  paymentCaptureUrl?: string;
   onStatusUpdate?: (bookingId: string, newStatus: string) => void;
   onViewDetails?: (bookingId: string) => void;
   isAdmin?: boolean;
 }
 
-export default function BookingCard({ 
+export default function BookingCard({
   id,
   serviceName,
   vehiclePlate,
@@ -29,6 +30,7 @@ export default function BookingCard({
   price,
   paymentMethod,
   paymentStatus,
+  paymentCaptureUrl,
   onStatusUpdate,
   onViewDetails,
   isAdmin = false
@@ -43,9 +45,9 @@ export default function BookingCard({
 
   const getPaymentMethodText = (method?: string) => {
     switch (method) {
-      case 'card': return 'Tarjeta';
-      case 'pix': return 'PIX';
       case 'cash': return 'Efectivo';
+      case 'transfer': return 'Transferencia';
+      case 'pix': return 'PIX';
       default: return 'No definido';
     }
   };
@@ -92,12 +94,21 @@ export default function BookingCard({
               {getPaymentMethodText(paymentMethod)}
             </span>
             {paymentStatus && (
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={`text-xs ${getPaymentStatusColor(paymentStatus)}`}
               >
-                {paymentStatus === 'paid' ? 'Pagado' : 
+                {paymentStatus === 'paid' ? 'Pagado' :
                  paymentStatus === 'failed' ? 'Falló' : 'Pendiente'}
+              </Badge>
+            )}
+            {paymentCaptureUrl && (
+              <Badge
+                variant="outline"
+                className="text-xs text-blue-600 border-blue-200"
+              >
+                <Image className="h-3 w-3 mr-1" />
+                Captura
               </Badge>
             )}
           </div>

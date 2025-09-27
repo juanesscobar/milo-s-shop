@@ -7,7 +7,8 @@ import BookingCard from "./BookingCard";
 import BookingsTable from "./BookingsTable";
 import MiniAnalytics from "./MiniAnalytics";
 import StatusBadge from "./StatusBadge";
-import { CalendarDays, Car, DollarSign, Clock, TrendingUp, List, Eye, History, FileText } from "lucide-react";
+import ServiceManagement from "./ServiceManagement";
+import { CalendarDays, Car, DollarSign, Clock, TrendingUp, List, Eye, History, FileText, Settings, Upload, Image } from "lucide-react";
 
 interface DashboardStats {
   todayBookings: number;
@@ -34,7 +35,7 @@ export default function AdminDashboard({
   onRefresh,
   isLoading = false
 }: AdminDashboardProps) {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'bookings-list' | 'washing-detail' | 'completed-history' | 'revenue-detail'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'bookings-list' | 'washing-detail' | 'completed-history' | 'revenue-detail' | 'services-management'>('dashboard');
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-PY', {
@@ -229,6 +230,10 @@ export default function AdminDashboard({
     );
   }
 
+  if (currentView === 'services-management') {
+    return <ServiceManagement onBack={() => setCurrentView('dashboard')} />;
+  }
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
@@ -241,15 +246,25 @@ export default function AdminDashboard({
             {new Date().toLocaleDateString('es-ES')}
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          data-testid="button-refresh-dashboard"
-          onClick={onRefresh}
-          disabled={isLoading}
-        >
-          <TrendingUp className="h-4 w-4 mr-2" />
-          {isLoading ? 'Actualizando...' : 'Actualizar'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentView('services-management')}
+            data-testid="button-services-management"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Servicios
+          </Button>
+          <Button
+            variant="outline"
+            data-testid="button-refresh-dashboard"
+            onClick={onRefresh}
+            disabled={isLoading}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            {isLoading ? 'Actualizando...' : 'Actualizar'}
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
