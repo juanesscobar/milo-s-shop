@@ -17,10 +17,14 @@ async function runMigration() {
     const tables = await db.all(sql`SELECT name FROM sqlite_master WHERE type='table'`);
     console.log('Current tables:', tables.map((t: any) => t.name));
 
-    // Drop existing users table to recreate with proper structure
-    console.log('🔄 Dropping existing users table...');
+    // Drop existing tables in correct order (reverse dependency order)
+    console.log('🔄 Dropping existing tables...');
+    await db.run(sql`PRAGMA foreign_keys = OFF`);
+    await db.run(sql`DROP TABLE IF EXISTS sessions`);
     await db.run(sql`DROP TABLE IF EXISTS users`);
-    console.log('✅ Dropped existing users table');
+    await db.run(sql`DROP TABLE IF EXISTS companies`);
+    await db.run(sql`PRAGMA foreign_keys = ON`);
+    console.log('✅ Dropped existing tables');
 
     // Create companies table for admin management
     await db.run(sql`

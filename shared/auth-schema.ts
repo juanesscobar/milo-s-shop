@@ -12,6 +12,11 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash").notNull(), // Never exposed in API responses
   role: text("role", { enum: ['client', 'admin'] }).notNull().default('client'),
   companyId: integer("company_id"), // Nullable integer for admins only
+  emailVerified: integer("email_verified", { mode: 'boolean' }).default(false).notNull(),
+  // MFA fields
+  mfaSecret: text("mfa_secret"), // TOTP secret for MFA
+  mfaEnabled: integer("mfa_enabled", { mode: 'boolean' }).default(false).notNull(), // Whether MFA is enabled
+  mfaBackupCodes: text("mfa_backup_codes"), // JSON array of backup codes
   createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
   updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
@@ -33,6 +38,24 @@ export const sessions = sqliteTable("sessions", {
   createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
 });
 
+// Email verification tokens table
+export const emailVerificationTokens = sqliteTable("email_verification_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text("token").notNull().unique(),
+  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+});
+
+// Password reset tokens table
+export const passwordResetTokens = sqliteTable("password_reset_tokens", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  token: text("token").notNull().unique(),
+  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
+  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   company: one(companies, {
@@ -40,6 +63,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [companies.id],
   }),
   sessions: many(sessions),
+  emailVerificationTokens: many(emailVerificationTokens),
+  passwordResetTokens: many(passwordResetTokens),
 }));
 
 export const companiesRelations = relations(companies, ({ many }) => ({
@@ -49,6 +74,20 @@ export const companiesRelations = relations(companies, ({ many }) => ({
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, {
     fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const emailVerificationTokensRelations = relations(emailVerificationTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [emailVerificationTokens.userId],
+    references: [users.id],
+  }),
+}));
+
+export const passwordResetTokensRelations = relations(passwordResetTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [passwordResetTokens.userId],
     references: [users.id],
   }),
 }));
@@ -71,8 +110,13 @@ export const registerClientSchema = z.object({
   password: z.string()
     .min(8, "La contraseña debe tener al menos 8 caracteres")
     .max(128, "Contraseña muy larga")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
       "La contraseña debe contener: minúscula, mayúscula, número y carácter especial"),
+  passwordConfirm: z.string()
+    .min(1, "La confirmación de contraseña es requerida"),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: "Las contraseñas no coinciden",
+  path: ["passwordConfirm"],
 });
 
 export const registerAdminSchema = z.object({
@@ -94,13 +138,19 @@ export const registerAdminSchema = z.object({
   password: z.string()
     .min(8, "La contraseña debe tener al menos 8 caracteres")
     .max(128, "Contraseña muy larga")
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
       "La contraseña debe contener: minúscula, mayúscula, número y carácter especial"),
+  passwordConfirm: z.string()
+    .min(1, "La confirmación de contraseña es requerida"),
+}).refine((data) => data.password === data.passwordConfirm, {
+  message: "Las contraseñas no coinciden",
+  path: ["passwordConfirm"],
 });
 
 export const loginSchema = z.object({
   email: z.string().email("Email inválido").optional(),
   password: z.string().min(1, "La contraseña es requerida"),
+  mfaToken: z.string().optional(),
 });
 
 // Insert and Select schemas
@@ -112,6 +162,8 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const selectUserSchema = createSelectSchema(users).omit({
   passwordHash: true, // Never expose password hash
+  mfaSecret: true, // Never expose MFA secret
+  mfaBackupCodes: true, // Never expose backup codes
 });
 
 export const insertCompanySchema = createInsertSchema(companies).omit({
@@ -131,6 +183,10 @@ export type Company = typeof companies.$inferSelect;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
 export type Session = typeof sessions.$inferSelect;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 export type RegisterClientData = z.infer<typeof registerClientSchema>;
 export type RegisterAdminData = z.infer<typeof registerAdminSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
@@ -139,6 +195,7 @@ export type LoginData = z.infer<typeof loginSchema>;
 export type AuthResponse = {
   user: User;
   message: string;
+  requiresMFA?: boolean;
 };
 
 export type ErrorResponse = {

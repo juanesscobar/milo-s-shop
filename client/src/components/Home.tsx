@@ -32,9 +32,15 @@ export default function Home({ language = 'es' }: HomeProps) {
 
   const t = content[language];
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
-    console.log(`Navigating to: ${path}`);
+  const handleNavigation = (path: string, action: 'login' | 'register' = 'login') => {
+    if (path === '/cliente') {
+      navigate(`/cliente/${action}`);
+    } else if (path === '/admin') {
+      navigate(`/admin/${action}`);
+    } else {
+      navigate(path);
+    }
+    console.log(`Navigating to: ${path}/${action}`);
   };
 
   return (
@@ -50,25 +56,43 @@ export default function Home({ language = 'es' }: HomeProps) {
       </div>
       
       <section className="panel">
-        <button 
-          className="btn-card" 
-          onClick={() => handleNavigation('/cliente')}
-          aria-label={t.clienteDesc}
-          data-testid="button-cliente"
-        >
-          <div className="btn-title">{t.cliente}</div>
-          <div className="btn-sub">{t.clienteDesc}</div>
-        </button>
-        
-        <button 
-          className="btn-card" 
-          onClick={() => handleNavigation('/admin')}
-          aria-label={t.adminDesc}
-          data-testid="button-admin"
-        >
-          <div className="btn-title">{t.admin}</div>
-          <div className="btn-sub">{t.adminDesc}</div>
-        </button>
+        <div className="user-type-card">
+          <button
+            className="btn-card"
+            onClick={() => handleNavigation('/cliente', 'login')}
+            aria-label={t.clienteDesc}
+            data-testid="button-cliente-login"
+          >
+            <div className="btn-title">{t.cliente}</div>
+            <div className="btn-sub">{t.clienteDesc}</div>
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => handleNavigation('/cliente', 'register')}
+            aria-label="Registrarse como cliente"
+          >
+            Nuevo cliente
+          </button>
+        </div>
+
+        <div className="user-type-card">
+          <button
+            className="btn-card"
+            onClick={() => handleNavigation('/admin', 'login')}
+            aria-label={t.adminDesc}
+            data-testid="button-admin-login"
+          >
+            <div className="btn-title">{t.admin}</div>
+            <div className="btn-sub">{t.adminDesc}</div>
+          </button>
+          <button
+            className="btn-secondary"
+            onClick={() => handleNavigation('/admin', 'register')}
+            aria-label="Registrarse como administrador"
+          >
+            Nuevo administrador
+          </button>
+        </div>
       </section>
       
       <footer className="contact">

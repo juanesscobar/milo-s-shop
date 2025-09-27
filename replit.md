@@ -29,9 +29,10 @@ Preferred communication style: Simple, everyday language.
 - **Current Schema**: Basic user management with plans for booking, service, and payment entities
 
 ## Authentication and Authorization
-- **Architecture**: Session-based authentication (current implementation shows basic user schema)
-- **User Roles**: Planned support for 'client' and 'admin' roles based on design specifications
-- **Security**: Express session middleware with PostgreSQL persistence
+- **Architecture**: Session-based authentication with Multi-Factor Authentication (MFA) support using TOTP
+- **User Roles**: Support for 'client' and 'admin' roles with role-based access control
+- **Security**: Express session middleware with PostgreSQL persistence, bcrypt password hashing, MFA with speakeasy library
+- **MFA Features**: TOTP-based two-factor authentication, QR code generation, backup codes, enable/disable functionality
 
 ## External Dependencies
 
@@ -62,3 +63,7 @@ The application is designed to handle multiple car wash services with dynamic pr
 
 ## Internationalization
 Built-in support for Spanish and Portuguese languages with a comprehensive translation system and locale-aware formatting for currency (Paraguayan Guaraní) and dates.
+
+
+New version
+

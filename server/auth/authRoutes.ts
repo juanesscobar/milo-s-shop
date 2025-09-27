@@ -1,6 +1,6 @@
 import express from 'express';
 import { authController } from './authController';
-import { rateLimitMiddleware, authMiddleware } from './authMiddleware';
+import { rateLimitMiddleware, authMiddleware } from './authMiddleware.js';
 
 /**
  * AuthRoutes - Organizes all authentication-related routes
@@ -68,9 +68,49 @@ export function createAuthRoutes(): express.Router {
   );
 
   // GET /api/auth/session/validate - Validate current session
-  router.get('/session/validate', 
+  router.get('/session/validate',
     authMiddleware,
     authController.validateSession.bind(authController)
+  );
+
+  /**
+   * MFA ROUTES - Multi-Factor Authentication
+   */
+
+  // POST /api/auth/mfa/enable - Enable MFA for user
+  router.post('/mfa/enable',
+    authMiddleware,
+    authController.enableMFA.bind(authController)
+  );
+
+  // POST /api/auth/mfa/verify - Verify MFA code and enable
+  router.post('/mfa/verify',
+    authController.verifyMFA.bind(authController)
+  );
+
+  // POST /api/auth/mfa/disable - Disable MFA for user
+  router.post('/mfa/disable',
+    authMiddleware,
+    authController.disableMFA.bind(authController)
+  );
+
+  /**
+   * EMAIL VERIFICATION ROUTES
+   */
+
+  // POST /api/auth/verify-email - Verify user email with token
+  router.post('/verify-email',
+    authController.verifyEmail.bind(authController)
+  );
+
+  // POST /api/auth/forgot-password - Send password reset email
+  router.post('/forgot-password',
+    authController.forgotPassword.bind(authController)
+  );
+
+  // POST /api/auth/reset-password - Reset password with token
+  router.post('/reset-password',
+    authController.resetPassword.bind(authController)
   );
 
   console.log('✅ Auth routes configured successfully');

@@ -130,3 +130,335 @@ body{
 .contact a:hover{
   color:var(--accent);
 }
+
+/* 5) Nuevos estilos para autenticación */
+.user-type-card {
+  margin: 15px 0;
+}
+
+.user-type-card .btn-card {
+  margin-bottom: 8px;
+}
+
+.btn-secondary {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  background: #F9FAFB;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: #F3F4F6;
+  border-color: #9CA3AF;
+  color: #111827;
+}
+
+/* 6) Estilos específicos para AuthPage - Mejorar contraste */
+.auth-page {
+  background: linear-gradient(180deg, #000000 0%, #111111 100%);
+  min-height: 100vh;
+}
+
+.auth-page .auth-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.auth-page .auth-form input {
+  background: #ffffff !important;
+  border: 2px solid #e5e7eb !important;
+  color: #111827 !important;
+  font-weight: 500;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.auth-page .auth-form input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  z-index: 2 !important;
+}
+
+.auth-page .auth-form input::placeholder {
+  color: #6b7280 !important;
+}
+
+/* Asegurar que no haya elementos superpuestos */
+.auth-page .auth-form .relative {
+  position: relative !important;
+}
+
+.auth-page .auth-form input + * {
+  display: none !important; /* Ocultar cualquier ícono que aparezca después del input */
+}
+
+/* Mejorar espaciado y layout de los campos */
+.auth-page .auth-form .space-y-2 {
+  margin-bottom: 1rem !important;
+}
+
+.auth-page .auth-form .space-y-2 > div {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.auth-page .auth-form .space-y-2 label {
+  display: block !important;
+  margin-bottom: 0.5rem !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Asegurar que los inputs estén por encima de cualquier elemento */
+.auth-page .auth-form input {
+  position: relative !important;
+  z-index: 10 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  width: 100% !important;
+  height: 36px !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  border-radius: 6px !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+/* Forzar que el placeholder aparezca dentro del input */
+.auth-page .auth-form input::placeholder {
+  position: static !important;
+  color: #6b7280 !important;
+  opacity: 1 !important;
+  font-size: 14px !important;
+  line-height: normal !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: inline !important;
+  transform: none !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  pointer-events: none !important;
+  z-index: auto !important;
+}
+
+/* Ocultar completamente cualquier ícono o elemento decorativo */
+.auth-page .auth-form input::-webkit-calendar-picker-indicator,
+.auth-page .auth-form input::-webkit-inner-spin-button,
+.auth-page .auth-form input::-webkit-outer-spin-button,
+.auth-page .auth-form input::-webkit-search-decoration,
+.auth-page .auth-form input::-webkit-search-cancel-button,
+.auth-page .auth-form input::-webkit-search-results-button,
+.auth-page .auth-form input::-webkit-search-results-decoration {
+  display: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Asegurar que no haya elementos pseudo después del input */
+.auth-page .auth-form input::after,
+.auth-page .auth-form input::before {
+  display: none !important;
+}
+
+/* Ocultar cualquier elemento hermano que pueda ser un ícono */
+.auth-page .auth-form input ~ svg,
+.auth-page .auth-form input ~ i,
+.auth-page .auth-form input ~ span,
+.auth-page .auth-form input ~ div,
+.auth-page .auth-form input ~ *,
+.auth-page .auth-form input + * {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Ocultar específicamente íconos de email del navegador */
+.auth-page .auth-form input[type="email"]::-webkit-calendar-picker-indicator,
+.auth-page .auth-form input[type="email"]::-webkit-inner-spin-button,
+.auth-page .auth-form input[type="email"]::-webkit-outer-spin-button,
+.auth-page .auth-form input[type="email"]::-webkit-search-decoration,
+.auth-page .auth-form input[type="email"]::-webkit-search-cancel-button,
+.auth-page .auth-form input[type="email"]::-webkit-search-results-button,
+.auth-page .auth-form input[type="email"]::-webkit-search-results-decoration,
+.auth-page .auth-form input[type="email"]::-moz-focus-inner {
+  display: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+/* Forzar layout limpio del contenedor */
+.auth-page .auth-form .space-y-2 {
+  position: relative !important;
+  isolation: isolate !important;
+  width: 100% !important;
+  display: block !important;
+  overflow: visible !important;
+  margin-bottom: 1rem !important;
+  clear: both !important;
+}
+
+/* Asegurar que no haya elementos flotantes o absolutos */
+.auth-page .auth-form * {
+  float: none !important;
+  position: relative !important;
+}
+
+.auth-page .auth-form input,
+.auth-page .auth-form label,
+.auth-page .auth-form button {
+  position: relative !important;
+  float: none !important;
+  clear: both !important;
+}
+
+.auth-page .auth-form .space-y-2 > div {
+  width: 100% !important;
+  display: block !important;
+  overflow: visible !important;
+}
+
+/* Asegurar que el label esté por encima del input */
+.auth-page .auth-form .space-y-2 label {
+  position: relative !important;
+  z-index: 5 !important;
+  display: block !important;
+  margin-bottom: 8px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+/* Ocultar elementos que puedan interferir */
+.auth-page .auth-form input::-webkit-validation-bubble,
+.auth-page .auth-form input::-webkit-validation-bubble-message,
+.auth-page .auth-form input::-webkit-validation-bubble-arrow {
+  display: none !important;
+}
+
+.auth-page .auth-form input::-moz-validation-bubble,
+.auth-page .auth-form input::-moz-validation-bubble-message,
+.auth-page .auth-form input::-moz-validation-bubble-arrow {
+  display: none !important;
+}
+
+/* Ocultar tooltips y elementos flotantes */
+.auth-page .auth-form [role="tooltip"],
+.auth-page .auth-form .tooltip,
+.auth-page .auth-form .popover {
+  display: none !important;
+}
+
+/* Asegurar que no haya elementos absolutos interfiriendo */
+.auth-page .auth-form * {
+  position: static !important;
+}
+
+.auth-page .auth-form input,
+.auth-page .auth-form label,
+.auth-page .auth-form button {
+  position: relative !important;
+}
+
+.auth-page .auth-form label {
+  color: #374151 !important;
+  font-weight: 600;
+  display: block !important;
+  margin-bottom: 8px !important;
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+/* Ocultar completamente elementos decorativos del navegador */
+.auth-page .auth-form input::-webkit-textfield-decoration-container,
+.auth-page .auth-form input::-webkit-input-decoration-container,
+.auth-page .auth-form input::-webkit-file-upload-button,
+.auth-page .auth-form input::-webkit-inner-spin-button,
+.auth-page .auth-form input::-webkit-outer-spin-button,
+.auth-page .auth-form input::-webkit-calendar-picker-indicator,
+.auth-page .auth-form input::-webkit-clear-button,
+.auth-page .auth-form input::-webkit-search-cancel-button,
+.auth-page .auth-form input::-webkit-search-results-button,
+.auth-page .auth-form input::-webkit-search-results-decoration,
+.auth-page .auth-form input::-moz-focus-inner,
+.auth-page .auth-form input::-moz-focus-outer,
+.auth-page .auth-form input::-moz-list-bullet,
+.auth-page .auth-form input::-moz-meter-bar,
+.auth-page .auth-form input::-moz-number-spin-box,
+.auth-page .auth-form input::-moz-number-spin-down,
+.auth-page .auth-form input::-moz-number-spin-up,
+.auth-page .auth-form input::-moz-number-text,
+.auth-page .auth-form input::-moz-number-wrapper,
+.auth-page .auth-form input::-moz-progress-bar,
+.auth-page .auth-form input::-moz-range-progress,
+.auth-page .auth-form input::-moz-range-thumb,
+.auth-page .auth-form input::-moz-range-track {
+  display: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Asegurar estructura de formulario limpia */
+.auth-page .auth-form {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
+.auth-page .auth-form > * {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Asegurar que los inputs de email no tengan íconos del navegador */
+.auth-page .auth-form input[type="email"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+  background-repeat: no-repeat !important;
+  background-position: right !important;
+  padding-right: 12px !important;
+}
+
+/* Forzar que el placeholder se muestre correctamente */
+.auth-page .auth-form input::placeholder {
+  color: #6b7280 !important;
+  opacity: 0.7 !important;
+  font-style: normal !important;
+  text-align: left !important;
+  vertical-align: middle !important;
+}
+
+.auth-page .auth-tabs .tabs-list {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.auth-page .auth-tabs .tabs-trigger {
+  color: #374151;
+  font-weight: 500;
+}
+
+.auth-page .auth-tabs .tabs-trigger[data-state="active"] {
+  background: #ffffff;
+  color: #111827;
+  font-weight: 600;
+}

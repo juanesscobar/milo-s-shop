@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { authService } from './authService';
-import { 
-  registerClientSchema, 
-  registerAdminSchema, 
+import { CaptchaService } from './captchaService';
+import {
+  registerClientSchema,
+  registerAdminSchema,
   loginSchema,
-  type ErrorResponse 
+  type ErrorResponse
 } from '@shared/auth-schema';
 import { z } from 'zod';
 
@@ -20,11 +21,33 @@ export class AuthController {
    */
   async registerClient(req: Request, res: Response): Promise<void> {
     console.log('🔐 AuthController: Client registration request received');
-    
+
     try {
       // Validate request body
       const validatedData = registerClientSchema.parse(req.body);
       console.log('✅ AuthController: Client data validation passed');
+
+      // Verify CAPTCHA if required
+      if (CaptchaService.isRequired()) {
+        const captchaToken = req.body.captchaToken;
+        if (!captchaToken) {
+          res.status(400).json({
+            error: 'CAPTCHA requerido',
+            details: 'Por favor complete el CAPTCHA'
+          } as ErrorResponse);
+          return;
+        }
+
+        const captchaValid = await CaptchaService.verifyToken(captchaToken, req.ip);
+        if (!captchaValid) {
+          res.status(400).json({
+            error: 'CAPTCHA inválido',
+            details: 'Por favor complete el CAPTCHA correctamente'
+          } as ErrorResponse);
+          return;
+        }
+        console.log('✅ AuthController: CAPTCHA verification passed');
+      }
 
       // Register client through service
       const result = await authService.registerClient(validatedData);
@@ -199,14 +222,14 @@ export class AuthController {
    */
   async validateSession(req: Request, res: Response): Promise<void> {
     console.log('🔐 AuthController: Session validation request');
-    
+
     try {
       const { userId, userRole } = req.session || {};
 
       if (!userId || !userRole) {
-        res.status(401).json({ 
-          valid: false, 
-          error: 'Sesión inválida o expirada' 
+        res.status(401).json({
+          valid: false,
+          error: 'Sesión inválida o expirada'
         });
         return;
       }
@@ -214,16 +237,16 @@ export class AuthController {
       // Verify user still exists in database
       const user = await authService.getUserById(userId);
       if (!user) {
-        res.status(401).json({ 
-          valid: false, 
-          error: 'Usuario no encontrado' 
+        res.status(401).json({
+          valid: false,
+          error: 'Usuario no encontrado'
         });
         return;
       }
 
       console.log('✅ AuthController: Session valid for user:', userId);
-      res.json({ 
-        valid: true, 
+      res.json({
+        valid: true,
         user,
         sessionInfo: {
           userId,
@@ -234,6 +257,176 @@ export class AuthController {
 
     } catch (error) {
       this.handleError(res, error, 'Error al validar sesión');
+    }
+  }
+
+  /**
+   * POST /api/auth/verify-email
+   * Verify user email with token
+   */
+  async verifyEmail(req: Request, res: Response): Promise<void> {
+    console.log('🔐 AuthController: Email verification request');
+
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        res.status(400).json({
+          error: 'Token requerido',
+          details: 'Se requiere un token de verificación'
+        } as ErrorResponse);
+        return;
+      }
+
+      const result = await authService.verifyEmail(token);
+
+      console.log('✅ AuthController: Email verified successfully');
+      res.json(result);
+
+    } catch (error) {
+      this.handleError(res, error, 'Error al verificar email');
+    }
+  }
+
+  /**
+   * POST /api/auth/forgot-password
+   * Send password reset email
+   */
+  async forgotPassword(req: Request, res: Response): Promise<void> {
+    console.log('🔐 AuthController: Forgot password request');
+
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        res.status(400).json({
+          error: 'Email requerido',
+          details: 'Se requiere una dirección de email'
+        } as ErrorResponse);
+        return;
+      }
+
+      const result = await authService.forgotPassword(email);
+
+      console.log('✅ AuthController: Password reset email sent');
+      res.json({
+        message: 'Si existe una cuenta con ese email, se ha enviado un enlace de restablecimiento de contraseña'
+      });
+
+    } catch (error) {
+      this.handleError(res, error, 'Error al enviar email de restablecimiento');
+    }
+  }
+
+  /**
+   * POST /api/auth/reset-password
+   * Reset password with token
+   */
+  async resetPassword(req: Request, res: Response): Promise<void> {
+    console.log('🔐 AuthController: Password reset request');
+
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        res.status(400).json({
+          error: 'Datos requeridos',
+          details: 'Se requiere token y nueva contraseña'
+        } as ErrorResponse);
+        return;
+      }
+
+      const result = await authService.resetPassword(token, newPassword);
+
+      console.log('✅ AuthController: Password reset successfully');
+      res.json(result);
+
+    } catch (error) {
+      this.handleError(res, error, 'Error al restablecer contraseña');
+    }
+  }
+
+  /**
+   * POST /api/auth/enable-mfa
+   * Enable MFA for user
+   */
+  async enableMFA(req: Request, res: Response): Promise<void> {
+    console.log('🔐 AuthController: Enable MFA request');
+
+    try {
+      const userId = req.session?.userId;
+
+      if (!userId) {
+        res.status(401).json({
+          error: 'No autenticado',
+          details: 'Se requiere sesión activa'
+        } as ErrorResponse);
+        return;
+      }
+
+      const result = await authService.enableMFA(userId);
+
+      console.log('✅ AuthController: MFA enabled successfully');
+      res.json(result);
+
+    } catch (error) {
+      this.handleError(res, error, 'Error al habilitar MFA');
+    }
+  }
+
+  /**
+   * POST /api/auth/verify-mfa
+   * Verify MFA code
+   */
+  async verifyMFA(req: Request, res: Response): Promise<void> {
+    console.log('🔐 AuthController: Verify MFA request');
+
+    try {
+      const { code, userId } = req.body;
+
+      if (!code || !userId) {
+        res.status(400).json({
+          error: 'Datos requeridos',
+          details: 'Se requiere código MFA y ID de usuario'
+        } as ErrorResponse);
+        return;
+      }
+
+      const result = await authService.verifyMFA(userId, code);
+
+      console.log('✅ AuthController: MFA verified successfully');
+      res.json(result);
+
+    } catch (error) {
+      this.handleError(res, error, 'Error al verificar MFA');
+    }
+  }
+
+  /**
+   * POST /api/auth/disable-mfa
+   * Disable MFA for user
+   */
+  async disableMFA(req: Request, res: Response): Promise<void> {
+    console.log('🔐 AuthController: Disable MFA request');
+
+    try {
+      const userId = req.session?.userId;
+
+      if (!userId) {
+        res.status(401).json({
+          error: 'No autenticado',
+          details: 'Se requiere sesión activa'
+        } as ErrorResponse);
+        return;
+      }
+
+      const result = await authService.disableMFA(userId);
+
+      console.log('✅ AuthController: MFA disabled successfully');
+      res.json(result);
+
+    } catch (error) {
+      this.handleError(res, error, 'Error al deshabilitar MFA');
     }
   }
 

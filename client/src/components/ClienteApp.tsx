@@ -12,7 +12,7 @@ import BookingFlow from "./BookingFlow";
 import VehicleSelector from "./VehicleSelector";
 import ClientAuth from "./ClientAuth";
 import { useAuth } from "@/hooks/useAuth";
-import { ShoppingCart, User, History, Car, AlertTriangle, LogOut, Phone, Mail } from "lucide-react";
+import { ShoppingCart, User, History, Car, AlertTriangle, Phone, Mail } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { Service, Booking } from "@shared/schema";
 
@@ -90,7 +90,12 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
 
   // Fetch user bookings from API
   const { data: userBookings = [], isLoading: bookingsLoading, error: bookingsError, refetch: refetchBookings } = useQuery<any[]>({
-    queryKey: ['/api/bookings'],
+    queryKey: ['bookings'],
+    queryFn: async () => {
+      const res = await fetch('/api/bookings', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch bookings');
+      return res.json();
+    },
     staleTime: 1 * 60 * 1000, // 1 minute
   });
 
@@ -377,17 +382,6 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
                     <Badge variant="outline" className="ml-1">
                       {currentLanguage === 'es' ? 'Cliente Activo' : 'Cliente Ativo'}
                     </Badge>
-                  </div>
-                  <div className="pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      onClick={() => logout()}
-                      className="w-full"
-                      data-testid="button-logout"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      {t.logout}
-                    </Button>
                   </div>
                 </div>
               </CardContent>
