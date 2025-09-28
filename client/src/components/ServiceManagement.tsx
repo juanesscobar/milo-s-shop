@@ -39,6 +39,7 @@ export default function ServiceManagement({ onBack }: ServiceManagementProps) {
       const response = await fetch('/api/services/upload-image', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {

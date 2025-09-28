@@ -1,22 +1,6 @@
-<<<<<<< HEAD
-/**
- * Archivo principal del servidor Milos-Shop
- *
- * Este archivo configura y inicia el servidor Express.js que maneja tanto la API REST
- * como el servicio de archivos estáticos del frontend. Incluye middlewares de seguridad,
- * compresión, rate limiting y configuración de sesiones.
- */
-
-import express, { type Request, Response, NextFunction } from "express";
-import session from 'express-session';
-import compression from 'compression';
-import rateLimit from 'express-rate-limit';
-import helmet from 'helmet';
-=======
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import session from 'express-session';
->>>>>>> 9c8b4b8 (version milos-shop, con login cliente funcionando y panel de admin sin registro y login, funcionando)
 import path from 'path';
 import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
@@ -42,78 +26,22 @@ Sentry.init({
 
 const app = express();
 
-<<<<<<< HEAD
-// Configure compression middleware
-app.use(compression());
-
-// Configure security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-}));
-
-// Configure rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Demasiadas solicitudes desde esta IP, por favor intente más tarde.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/', limiter);
-
-// Rate limiting más estricto para autenticación
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
-  message: 'Demasiados intentos de autenticación, por favor intente más tarde.',
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/auth/', authLimiter);
-
-// Configure session middleware
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'milos-shop-secret-key',
-=======
-// Debug middleware to log raw request data
-app.use((req, res, next) => {
-  if (req.method === 'POST' && req.path.startsWith('/api')) {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-    });
-    req.on('end', () => {
-      console.log('Raw request data:', data);
-      console.log('Content-Type:', req.headers['content-type']);
-      console.log('Content-Length:', req.headers['content-length']);
-      try {
-        const parsed = JSON.parse(data);
-        console.log('Manual JSON.parse successful:', parsed);
-      } catch (e) {
-        console.log('Manual JSON.parse failed:', (e as Error).message);
-      }
-    });
-  }
-  next();
-});
-
+// IMPORTANT: Body parsers MUST come before any middleware that reads the request stream
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: false, limit: '10mb' }));
 
-// Remove raw parser to allow json parser to work
-
-// Debug middleware to log parsed request body
+// Debug middleware to log parsed request body (AFTER body parsers)
 app.use((req, res, next) => {
   if (req.method === 'POST' && req.path.startsWith('/api')) {
-    console.log('Parsed request body:', req.body);
+    console.log('📝 POST request to:', req.path);
+    console.log('📊 Parsed request body:', req.body);
     console.log('Content-Type:', req.headers['content-type']);
+    console.log('Content-Length:', req.headers['content-length']);
+    
+    // For multipart/form-data, body will be handled by multer later
+    if (req.headers['content-type']?.includes('multipart/form-data')) {
+      console.log('📤 Multipart data detected - will be processed by multer');
+    }
   }
   next();
 });
@@ -121,24 +49,14 @@ app.use((req, res, next) => {
 // Configure session middleware
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
->>>>>>> 9c8b4b8 (version milos-shop, con login cliente funcionando y panel de admin sin registro y login, funcionando)
   resave: false,
   saveUninitialized: false,
   cookie: {
     secure: false, // Set to true in production with HTTPS
-<<<<<<< HEAD
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-=======
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
->>>>>>> 9c8b4b8 (version milos-shop, con login cliente funcionando y panel de admin sin registro y login, funcionando)
 
 // Serve static files from attached_assets directory BEFORE other routes
 const attachedAssetsPath = path.join(process.cwd(), 'attached_assets');
@@ -180,17 +98,9 @@ app.use((req, res, next) => {
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-<<<<<<< HEAD
 
-    // Capture error with Sentry
-    Sentry.captureException(err);
-
-    res.status(status).json({ message });
-    throw err;
-=======
-  
     console.error(`Error in ${req.method} ${req.path}:`, err);
-  
+
     // Ensure API routes always return JSON
     if (req.path.startsWith('/api')) {
       console.error(`API Error on ${req.path}:`, err);
@@ -203,7 +113,6 @@ app.use((req, res, next) => {
       }
     }
     // Don't throw err to prevent it from reaching Vite catch-all
->>>>>>> 9c8b4b8 (version milos-shop, con login cliente funcionando y panel de admin sin registro y login, funcionando)
   });
 
   // importantly only setup vite in development and after
@@ -259,16 +168,11 @@ app.use((req, res, next) => {
   });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5001 for testing if not specified.
+  // Other ports are firewalled. Default to 5000 for testing if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-<<<<<<< HEAD
-  const port = parseInt(process.env.PORT || '5001', 10);
-  server.listen(port, "0.0.0.0", () => {
-=======
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen(port, () => {
->>>>>>> 9c8b4b8 (version milos-shop, con login cliente funcionando y panel de admin sin registro y login, funcionando)
     log(`serving on port ${port}`);
   });
 })();

@@ -98,14 +98,18 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
   // Register mutation
   const registerMutation = useMutation({
     mutationFn: async (data: typeof registerData) => {
-      const endpoint = userType === 'admin' ? '/api/auth/register/admin' : '/api/auth/register/client';
+      const endpoint = userType === 'admin' ? '/api/auth/register/admin' : '/api/auth/register';
+      console.log('🔍 DEBUG: Attempting registration with endpoint:', endpoint, 'for userType:', userType);
+      console.log('🔍 DEBUG: Registration data:', { ...data, password: '[HIDDEN]', passwordConfirm: '[HIDDEN]' });
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
         credentials: 'include'
       });
+      console.log('🔍 DEBUG: Response status:', response.status, 'ok:', response.ok);
       const result = await response.json();
+      console.log('🔍 DEBUG: Response result:', result);
       if (!response.ok) throw new Error(result.error || 'Registration failed');
       return result;
     },

@@ -17,11 +17,12 @@ interface BookingFlowProps {
   selectedVehicleType: 'auto' | 'suv' | 'camioneta';
   onBack: () => void;
   language: 'es' | 'pt';
+  authenticatedUser?: any;
 }
 
-export default function BookingFlow({ service, selectedVehicleType, onBack, language }: BookingFlowProps) {
-  const [step, setStep] = useState<'user' | 'vehicle' | 'booking' | 'payment'>('user');
-  const [userId, setUserId] = useState<string>('');
+export default function BookingFlow({ service, selectedVehicleType, onBack, language, authenticatedUser }: BookingFlowProps) {
+  const [step, setStep] = useState<'user' | 'vehicle' | 'booking' | 'payment'>(authenticatedUser ? 'vehicle' : 'user');
+  const [userId, setUserId] = useState<string>(authenticatedUser?.id || '');
   const [vehicleId, setVehicleId] = useState<string>('');
   const [bookingData, setBookingData] = useState({
     date: '',
@@ -35,9 +36,9 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
   const [paymentCaptureFile, setPaymentCaptureFile] = useState<File | null>(null);
   const [paymentCapturePreview, setPaymentCapturePreview] = useState<string>('');
   const [userForm, setUserForm] = useState({
-    name: '',
-    phone: '',
-    email: '',
+    name: authenticatedUser?.name || '',
+    phone: authenticatedUser?.phone || '',
+    email: authenticatedUser?.email || '',
     language: language
   });
   const [vehicleForm, setVehicleForm] = useState({
@@ -111,7 +112,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
   };
 
   const t = content[language];
-  const servicePrice = service.prices[selectedVehicleType] || 0;
+  const servicePrice = service.prices?.[selectedVehicleType] || 0;
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-PY', {
@@ -203,7 +204,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
         title: t.bookingSuccess,
         description: `Reserva para ${service.title} confirmada`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
       onBack(); // Return to services list
     },
     onError: (error: any) => {
@@ -216,6 +217,13 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
   });
 
   const handleUserSubmit = () => {
+    if (authenticatedUser) {
+      // Skip user creation if already authenticated
+      setUserId(authenticatedUser.id);
+      setStep('vehicle');
+      return;
+    }
+
     if (!userForm.name || !userForm.phone) {
       toast({
         title: "Error",
@@ -224,7 +232,7 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
       });
       return;
     }
-    
+
     createUserMutation.mutate({
       name: userForm.name,
       phone: userForm.phone,
@@ -314,6 +322,8 @@ export default function BookingFlow({ service, selectedVehicleType, onBack, lang
     if (paymentCaptureFile && !paymentData.paymentCaptureUrl) {
       await handlePaymentCaptureUpload(paymentCaptureFile);
     }
+
+    console.log('🔍 DEBUG: BookingFlow handlePaymentSubmit - userId:', userId, 'vehicleId:', vehicleId, 'serviceId:', service.id);
 
     createBookingMutation.mutate({
       userId,

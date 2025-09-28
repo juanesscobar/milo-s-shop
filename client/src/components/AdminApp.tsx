@@ -32,9 +32,23 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
     queryKey: ['/api/bookings/today'],
     retry: 3,
     retryDelay: 1000,
-    enabled: isConnected,
-    select: (data: any[]) => data,
+    enabled: true, // Always enabled, let React Query handle caching
+    select: (data: any[]) => data
   });
+
+  // Debug logging for query success
+  useEffect(() => {
+    if (rawBookings.length > 0) {
+      console.log('🔍 DEBUG: AdminApp - Today bookings query success:', rawBookings.length, 'bookings');
+    }
+  }, [rawBookings]);
+
+  // Debug logging for query error
+  useEffect(() => {
+    if (error) {
+      console.log('🔍 DEBUG: AdminApp - Today bookings query error:', error);
+    }
+  }, [error]);
 
   // Transform bookings data
   const bookings = rawBookings.map((booking: any) => ({

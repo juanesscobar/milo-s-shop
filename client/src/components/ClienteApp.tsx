@@ -92,9 +92,12 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
   const { data: userBookings = [], isLoading: bookingsLoading, error: bookingsError, refetch: refetchBookings } = useQuery<any[]>({
     queryKey: ['bookings'],
     queryFn: async () => {
+      console.log('🔍 DEBUG: ClienteApp - Fetching bookings from /api/bookings');
       const res = await fetch('/api/bookings', { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch bookings');
-      return res.json();
+      const data = await res.json();
+      console.log('🔍 DEBUG: ClienteApp - Bookings fetched:', data.length, 'bookings');
+      return data;
     },
     staleTime: 1 * 60 * 1000, // 1 minute
   });
@@ -169,11 +172,12 @@ export default function ClienteApp({ language = 'es' }: ClienteAppProps) {
         />
         
         <div className="container mx-auto px-4 py-6">
-          <BookingFlow 
+          <BookingFlow
             service={bookingService}
             selectedVehicleType={selectedVehicleType || 'auto'}
             onBack={handleBackToServices}
             language={currentLanguage}
+            authenticatedUser={user}
           />
         </div>
       </div>

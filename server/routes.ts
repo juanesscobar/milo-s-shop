@@ -8,29 +8,40 @@ import bcrypt from 'bcrypt';
 import { storage } from "./storage";
 import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, services } from "@shared/schema";
 import { z } from "zod";
+
+// Import schema from db configuration (uses @shared/auth-schema)
 import { db } from "./db";
 import { eq } from "drizzle-orm";
+import { users as authUsers } from "@shared/auth-schema";
+import { registerClientSchema, registerAdminSchema, loginSchema } from "@shared/auth-schema";
 
-// Import new auth schema
-import { users as authUsers, type InsertUser as AuthInsertUser } from "@shared/auth-schema";
+// Auth schema import moved above
 
 // Import auth controller
 import { authController } from './auth/authController';
 
 // Admin middleware
 const requireAdmin = (req: any, res: any, next: any) => {
+  console.log('🔍 DEBUG: requireAdmin - Session userId:', (req.session as any).userId);
+  console.log('🔍 DEBUG: requireAdmin - Session userRole:', (req.session as any).userRole);
+
   if (!(req.session as any).userId) {
+    console.log('❌ DEBUG: requireAdmin - No userId in session');
     return res.status(401).json({ error: 'Authentication required' });
   }
 
   if ((req.session as any).userRole !== 'admin') {
+    console.log('❌ DEBUG: requireAdmin - User is not admin');
     return res.status(403).json({ error: 'Admin access required' });
   }
 
+  console.log('✅ DEBUG: requireAdmin - Admin access granted');
   next();
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log('🔧 Registering routes...');
+
   // Services API
   app.get("/api/services", async (req, res) => {
     try {
@@ -77,49 +88,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Password must be at least 6 characters long" });
       }
 
-      // TEMPORARILY DISABLED strict validation for testing
-      /*
-      const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-      const hasNumber = /\d/.test(password);
-      if (!hasSpecialChar || !hasNumber) {
-        console.log('❌ Password validation failed: missing special char or number');
-        return res.status(400).json({ error: "Password must contain at least one special character and one number" });
-      }
-      */
       console.log('✅ Password validation passed');
 
-      // Check if user already exists
-      const existingUser = await storage.getUserByPhone(phone);
+      // Check if user already exists using authUsers schema
+      let existingUser;
+      if (email) {
+        console.log('🔍 DEBUG: Checking by email:', email);
+        const emailResults = await db.select().from(authUsers).where(eq(authUsers.email, email));
+        [existingUser] = emailResults;
+      }
+      if (!existingUser) {
+        console.log('🔍 DEBUG: Checking by phone:', phone);
+        const phoneResults = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+        [existingUser] = phoneResults;
+      }
+
       if (existingUser) {
-        console.log('User already exists with phone:', phone);
-        return res.status(409).json({ error: "User with this phone already exists" });
+        console.log('User already exists:', existingUser.id);
+        return res.status(409).json({ error: "User with this phone or email already exists" });
       }
 
       // Hash password
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Create new client user
+      // Create new client user using authUsers schema
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       const userData = {
-        name,
-        phone,
+        id: userId,
+        name: name.trim(),
+        phone: phone,
         email: email || null,
-        password: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'client' as const,
-        isGuest: false
+        companyId: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      const user = await storage.createUser(userData);
+      console.log('🔍 DEBUG: Inserting user data:', { ...userData, password: '[HIDDEN]' });
+      await db.insert(authUsers).values(userData);
+      console.log('✅ User created successfully with ID:', userId);
 
       // Create session
-      (req.session as any).userId = user.id;
-      (req.session as any).userRole = user.role;
+      (req.session as any).userId = userId;
+      (req.session as any).userRole = 'client';
 
       // Return user without sensitive data
-      const { password: _, ...userWithoutPassword } = user;
+      const { passwordHash: _, ...userWithoutPassword } = userData;
       res.status(201).json({ user: userWithoutPassword, message: "User registered successfully" });
     } catch (error) {
       console.error("Error registering user:", error);
       res.status(500).json({ error: "Failed to register user" });
+    }
+  });
+
+  // Admin Registration API
+  app.post("/api/auth/register/admin", async (req, res) => {
+    console.log('POST /api/auth/register/admin called with body:', req.body);
+    try {
+      const { name, companyName, phone, email, password } = req.body;
+
+      if (!name || !companyName || !phone || !email || !password) {
+        console.log('❌ Validation failed: missing required fields');
+        return res.status(400).json({ error: "All fields are required for admin registration" });
+      }
+
+      // Validate password strength
+      if (password.length < 8) {
+        console.log('❌ Password validation failed: too short');
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+
+      console.log('✅ Password validation passed');
+
+      // Check if user already exists
+      let existingUser;
+      if (email) {
+        const emailResults = await db.select().from(authUsers).where(eq(authUsers.email, email));
+        [existingUser] = emailResults;
+      }
+      if (!existingUser) {
+        const phoneResults = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+        [existingUser] = phoneResults;
+      }
+
+      if (existingUser) {
+        console.log('User already exists:', existingUser.id);
+        return res.status(409).json({ error: "User with this phone or email already exists" });
+      }
+
+      // TODO: Implement proper company management
+      const companyId = null;
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Create new admin user
+      const userId = `admin_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      const userData = {
+        id: userId,
+        name: name.trim(),
+        phone: phone,
+        email: email,
+        passwordHash: hashedPassword,
+        role: 'admin' as const,
+        companyId: companyId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      console.log('🔍 DEBUG: Inserting admin user data:', { ...userData, password: '[HIDDEN]' });
+      await db.insert(authUsers).values(userData);
+      console.log('✅ Admin user created successfully with ID:', userId);
+
+      // Create session
+      (req.session as any).userId = userId;
+      (req.session as any).userRole = 'admin';
+
+      // Return user without sensitive data
+      const { passwordHash: _, ...userWithoutPassword } = userData;
+      res.status(201).json({ user: userWithoutPassword, message: "Admin registered successfully" });
+    } catch (error) {
+      console.error("Error registering admin:", error);
+      res.status(500).json({ error: "Failed to register admin" });
     }
   });
 
@@ -137,40 +228,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // DEBUG: Log search criteria
       console.log('🔍 DEBUG: Search criteria - phone:', phone, 'email:', email);
 
-      // Find user by phone or email
+      // Find user by phone or email using authUsers schema
       let user;
       if (phone) {
         console.log('🔍 Searching user by phone:', phone);
-        user = await storage.getUserByPhone(phone);
+        const phoneResults = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+        [user] = phoneResults;
         console.log('🔍 DEBUG: Phone search result:', user ? 'FOUND' : 'NOT FOUND');
         if (user) {
-          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, phone: user.phone, hasPassword: !!user.password });
+          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, phone: user.phone, hasPassword: !!user.passwordHash });
         }
       } else if (email) {
         console.log('🔍 Searching user by email:', email);
-        user = await storage.getUserByEmail(email);
+        const emailResults = await db.select().from(authUsers).where(eq(authUsers.email, email));
+        [user] = emailResults;
         console.log('🔍 DEBUG: Email search result:', user ? 'FOUND' : 'NOT FOUND');
         if (user) {
-          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, email: user.email, hasPassword: !!user.password });
+          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, email: user.email, hasPassword: !!user.passwordHash });
         }
       }
 
       if (!user) {
-        console.log('❌ User not found - Let me check what users exist in DB');
-        // DEBUG: List all users to see what's in the database
+        console.log('❌ User not found - Let me check what authUsers exist in DB');
+        // DEBUG: List all authUsers to see what's in the database
         const allUsers = await db.select().from(authUsers);
-        console.log('🔍 DEBUG: All users in database:', allUsers.map((u: any) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email })));
+        console.log('🔍 DEBUG: All authUsers in database:', allUsers.map((u: any) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email })));
         return res.status(404).json({ error: "User not found" });
       }
 
       console.log('User found:', user.id);
 
       // Check password
-      if (!user.password) {
+      if (!user.passwordHash) {
         return res.status(400).json({ error: "Password authentication required" });
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.password);
+      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
       if (!isValidPassword) {
         return res.status(401).json({ error: "Invalid password" });
       }
@@ -180,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req.session as any).userRole = user.role;
 
       // Return user without sensitive data
-      const { password: _, ...userWithoutPassword } = user;
+      const { passwordHash: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword, message: "Login successful" });
     } catch (error) {
       console.error("Error logging in user:", error);
@@ -208,12 +301,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const user = await storage.getUser((req.session as any).userId);
+      // Find user using authUsers schema
+      const userResults = await db.select().from(authUsers).where(eq(authUsers.id, (req.session as any).userId));
+      const user = userResults[0];
+
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      res.json({ user: user });
+      // Return user without sensitive data
+      const { passwordHash: _, ...userWithoutPassword } = user;
+      res.json({ user: userWithoutPassword });
     } catch (error) {
       console.error("Error fetching current user:", error);
       res.status(500).json({ error: "Failed to fetch user data" });
@@ -229,19 +327,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/reset-password", authController.resetPassword.bind(authController));
   app.get("/api/auth/session/validate", authController.validateSession.bind(authController));
 
-  // DEBUG: Temporary endpoint to check users in database
-  app.get("/api/debug/users", async (req, res) => {
+  // DEBUG: Temporary endpoint to check authUsers in database
+  app.get("/api/debug/authUsers", async (req, res) => {
     try {
       console.log('🔍 DEBUG: Testing authUsers schema query');
       const allUsers = await db.select().from(authUsers);
-      console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'users');
-      console.log('🔍 DEBUG: All users in database:');
+      console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'authUsers');
+      console.log('🔍 DEBUG: All authUsers in database:');
       allUsers.forEach((user: any) => {
         console.log(`   - ID: ${user.id}, Name: ${user.name}, Phone: ${user.phone}, Email: ${user.email}, HasPassword: ${!!user.passwordHash}`);
       });
       res.json({
         count: allUsers.length,
-        users: allUsers.map((u: any) => ({
+        authUsers: allUsers.map((u: any) => ({
           id: u.id,
           name: u.name,
           phone: u.phone,
@@ -252,16 +350,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }))
       });
     } catch (error) {
-      console.error("❌ Error fetching users:", error);
+      console.error("❌ Error fetching authUsers:", error);
       console.error("❌ Error type:", typeof error);
       console.error("❌ Error stack:", error instanceof Error ? error.stack : 'No stack');
-      res.status(500).json({ error: "Failed to fetch users", details: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "Failed to fetch authUsers", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
   // Create user (for booking flow) - UPDATED FOR NEW AUTH SYSTEM
+  console.log('🔧 Registering POST /api/users route');
   app.post("/api/users", async (req, res) => {
-    console.log('POST /api/users called with body:', req.body);
+    console.log('POST /api/authUsers called with body:', req.body);
     console.log('Headers:', req.headers['content-type']);
     try {
       const { name, phone, email, language, role } = req.body;
@@ -297,21 +396,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔍 DEBUG: Creating new guest user');
       // Create new client user WITHOUT password (for booking flow compatibility)
-      // In production, users should register through /api/auth/register
+      // In production, authUsers should register through /api/auth/register
       const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       const userData = {
         id: userId,
         name: name.trim(),
         phone: phone,
         email: email || null,
-        passwordHash: '', // Empty password hash for booking flow users (they can't login)
+        passwordHash: '', // Empty password hash for booking flow authUsers (they can't login)
         role: (role as 'client' | 'admin') || 'client',
         companyId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
-      console.log('🔍 DEBUG: Inserting user data:', { ...userData, passwordHash: '[HIDDEN]' });
+      console.log('🔍 DEBUG: Inserting user data:', { ...userData, password: '[HIDDEN]' });
       await db.insert(authUsers).values(userData);
       console.log('Created guest user:', userId);
 
@@ -358,20 +457,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Bookings API
   app.post("/api/bookings", async (req, res) => {
-    console.log('POST /api/bookings called with body:', req.body);
-    console.log('Headers:', req.headers['content-type']);
+    console.log('🔍 DEBUG: POST /api/bookings called');
+    console.log('🔍 DEBUG: Request body:', req.body);
+    console.log('🔍 DEBUG: Headers:', req.headers['content-type']);
+    console.log('🔍 DEBUG: Session userId:', (req.session as any).userId);
+    console.log('🔍 DEBUG: Session userRole:', (req.session as any).userRole);
+
     try {
       const bookingData = insertBookingSchema.parse(req.body);
-      console.log('Parsed booking data:', bookingData);
+      console.log('✅ DEBUG: Parsed booking data successfully:', bookingData);
+
       const booking = await storage.createBooking(bookingData);
-      console.log('Created booking:', booking);
+      console.log('✅ DEBUG: Created booking successfully:', booking);
       res.status(201).json(booking);
     } catch (error) {
-      console.error("Error creating booking:", error);
-      console.error("Error type:", typeof error);
-      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack');
+      console.error("❌ DEBUG: Error creating booking:", error);
+      console.error("❌ DEBUG: Error type:", typeof error);
+      console.error("❌ DEBUG: Error stack:", error instanceof Error ? error.stack : 'No stack');
+      console.error("❌ DEBUG: Error message:", error instanceof Error ? error.message : String(error));
+
       if (error instanceof z.ZodError) {
-        console.log('Zod validation error:', error.errors);
+        console.log('❌ DEBUG: Zod validation error:', error.errors);
         return res.status(400).json({ error: "Invalid booking data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create booking", details: error instanceof Error ? error.message : String(error) });
@@ -380,16 +486,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/bookings", async (req, res) => {
     try {
+      console.log('🔍 DEBUG: GET /api/bookings called');
+      console.log('🔍 DEBUG: Session userId:', (req.session as any).userId);
+      console.log('🔍 DEBUG: Session userRole:', (req.session as any).userRole);
+
       // Check authentication
       if (!(req.session as any).userId) {
+        console.log('❌ DEBUG: No userId in session');
         return res.status(401).json({ error: "Authentication required" });
       }
 
+      console.log('🔍 DEBUG: Calling storage.getUserBookings with userId:', (req.session as any).userId);
       // Return user bookings
       const userBookings = await storage.getUserBookings((req.session as any).userId);
+      console.log('🔍 DEBUG: getUserBookings returned:', userBookings.length, 'bookings');
+      console.log('🔍 DEBUG: Bookings data:', JSON.stringify(userBookings, null, 2));
+
       res.json(userBookings);
     } catch (error) {
-      console.error("Error fetching bookings:", error);
+      console.error("❌ DEBUG: Error fetching bookings:", error);
       res.status(500).json({ error: "Failed to fetch bookings", details: error instanceof Error ? error.message : String(error) });
     }
   });
@@ -397,12 +512,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get today's bookings (for admin dashboard)
   app.get("/api/bookings/today", async (req, res) => {
     try {
+      console.log("🔍 DEBUG: GET /api/bookings/today called");
+      const today = new Date().toISOString().split('T')[0];
+      console.log("🔍 DEBUG: Today's date:", today);
       console.log("Fetching today's bookings");
       const bookings = await storage.getTodayBookings();
       console.log(`Found ${bookings.length} bookings for today`);
+      console.log('🔍 DEBUG: Today bookings data:', bookings);
       res.json(bookings);
     } catch (error) {
-      console.error("Error fetching today's bookings:", error);
+      console.error("❌ DEBUG: Error fetching today's bookings:", error);
       res.status(500).json({ error: "Failed to fetch today's bookings" });
     }
   });
@@ -476,24 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Service image upload route
-  app.post('/api/services/upload-image', requireAdmin, (req, res, next) => {
-    upload.single('image')(req, res, (err) => {
-      if (err instanceof multer.MulterError) {
-        // Multer error
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ error: 'El archivo es demasiado grande. Máximo 5MB permitido.' });
-        }
-        if (err.code === 'LIMIT_FILE_COUNT') {
-          return res.status(400).json({ error: 'Solo se permite un archivo por solicitud.' });
-        }
-        return res.status(400).json({ error: 'Error al procesar el archivo.' });
-      } else if (err) {
-        // Custom error from fileFilter
-        return res.status(400).json({ error: err.message });
-      }
-      next();
-    });
-  }, async (req, res) => {
+  app.post('/api/services/upload-image', upload.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No se recibió ningún archivo de imagen' });
@@ -570,16 +672,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     // Join admin room for real-time updates (with basic auth)
     socket.on('join-admin', (authToken) => {
+      console.log('🔍 DEBUG: join-admin event received');
+      console.log('🔍 DEBUG: Received authToken:', authToken);
+      console.log('🔍 DEBUG: Socket ID:', socket.id);
+
       // Basic admin auth - in production, use proper JWT or session validation
       const adminToken = process.env.ADMIN_WS_TOKEN || 'admin-secret-key';
-      
+      console.log('🔍 DEBUG: Expected adminToken:', adminToken);
+
       if (authToken !== adminToken) {
-        console.log('Unauthorized admin access attempt:', socket.id);
+        console.log('❌ Unauthorized admin access attempt:', socket.id);
+        console.log('❌ DEBUG: Token mismatch - received:', authToken, 'expected:', adminToken);
         socket.emit('auth-error', 'Invalid admin token');
         return;
       }
-      
-      console.log('Admin joined:', socket.id);
+
+      console.log('✅ Admin joined successfully:', socket.id);
       adminSockets.add(socket);
       socket.join('admin');
     });
