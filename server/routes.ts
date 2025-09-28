@@ -42,6 +42,41 @@ const requireAdmin = (req: any, res: any, next: any) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log('🔧 Registering routes...');
 
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Basic health check - verify database connection
+      const healthCheck: any = {
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || "development",
+        memory: {
+          used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+        },
+        database: "unknown"
+      };
+
+      // Quick DB check (optional - comment out if causing issues)
+      try {
+        await db.select().from(authUsers).limit(1);
+        healthCheck.database = "connected";
+      } catch (dbError) {
+        console.error("Health check DB error:", dbError);
+        healthCheck.database = "disconnected";
+      }
+
+      res.status(200).json(healthCheck);
+    } catch (error) {
+      console.error("Health check failed:", error);
+      res.status(503).json({
+        status: "unhealthy",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Services API
   app.get("/api/services", async (req, res) => {
     try {

@@ -1,43 +1,100 @@
+# ================================================
+# Docker Compose para Producción - Milo's Shop
+# ================================================
 version: "3.9"
 
 services:
-  qdrant:
-    image: qdrant/qdrant:v1.9.0
-    container_name: qdrant
-    restart: always
-    ports:
-      - "6333:6333"   # API HTTP
-      - "6334:6334"   # API gRPC
-    volumes:
-      - qdrant_storage:/qdrant/storage
-
-  miloshop-backend:
-    build: ./backend
-    container_name: miloshop-backend
+  # ===== Aplicación Principal =====
+  miloshop:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - NODE_ENV=production
+        - PORT=${PORT:-5000}
+    container_name: miloshop-app
     restart: unless-stopped
     env_file:
-      - ./backend/.env
-    depends_on:
-      - qdrant
+      - .env
+    environment:
+      # Variables de entorno para producción
+      - NODE_ENV=production
+      - PORT=${PORT:-5000}
+      # Base de datos PostgreSQL (Neon serverless)
+      - DATABASE_URL=${DATABASE_URL}
+      # Sesiones y seguridad
+      - SESSION_SECRET=${SESSION_SECRET}
+      - ADMIN_WS_TOKEN=${ADMIN_WS_TOKEN}
+      # CORS
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:5000}
+      # Email (opcional)
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      # Pagos (opcional)
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - MERCADOPAGO_ACCESS_TOKEN=${MERCADOPAGO_ACCESS_TOKEN}
+      # Monitoring
+      - SENTRY_DSN=${SENTRY_DSN}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     ports:
-      - "3000:3000"
+      - "${PORT:-5000}:${PORT:-5000}"
     volumes:
-      - ./backend:/app
-    command: npm run dev  # o el comando que uses en Express
+      # Volumen para uploads persistentes
+      - uploads_data:/app/uploads
+      # Volumen para logs (opcional)
+      - logs_data:/app/logs
+    networks:
+      - miloshop-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:${PORT:-5000}/api/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
 
-  miloshop-frontend:
-    build: ./frontend
-    container_name: miloshop-frontend
+  # ===== Nginx Reverse Proxy (opcional para producción) =====
+  nginx:
+    image: nginx:alpine
+    container_name: miloshop-nginx
     restart: unless-stopped
-    env_file:
-      - ./frontend/.env
-    depends_on:
-      - miloshop-backend
     ports:
-      - "5173:5173" # Vite frontend
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./frontend:/app
-    command: npm run dev
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    networks:
+      - miloshop-network
+    depends_on:
+      - miloshop
+    profiles:
+      - with-nginx
 
+# ===== Volúmenes Persistentes =====
 volumes:
-  qdrant_storage:
+  uploads_data:
+    driver: local
+  logs_data:
+    driver: local
+  nginx_cache:
+    driver: local
+
+# ===== Red Interna =====
+networks:
+  miloshop-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

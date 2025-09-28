@@ -1,0 +1,61 @@
+# ================================================
+# Configuración de Railway para Milo's Shop
+# Alternativa a railway.json en formato TOML
+# ================================================
+
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+# Usa cache de Docker para builds más rápidos
+buildCache = true
+
+[deploy]
+# Configuración de despliegue
+numReplicas = 1
+region = "us-west1"
+startCommand = "node --enable-source-maps dist/index.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Health check
+healthcheckPath = "/api/health"
+healthcheckTimeout = 5
+healthcheckInterval = 30
+
+# Recursos (ajusta según tu plan de Railway)
+[deploy.resources]
+cpu = "0.5"
+memory = "512MB"
+
+# Variables de entorno predeterminadas
+[env]
+NODE_ENV = "production"
+LOG_LEVEL = "info"
+
+# Puerto dinámico de Railway
+PORT = "${{PORT}}"
+
+# URL de CORS automática
+CORS_ORIGIN = "https://${{RAILWAY_PUBLIC_DOMAIN}}"
+
+# Configuración de base de datos
+# DATABASE_URL será proporcionada por Railway PostgreSQL addon
+# o configura tu Neon serverless URL aquí
+
+# Scripts de ciclo de vida
+[scripts]
+# Script para ejecutar después del build
+postBuild = """
+echo "✅ Build completado para Milo's Shop"
+echo "📦 Verificando archivos compilados..."
+ls -la dist/
+ls -la client/dist/
+"""
+
+# Script para ejecutar antes del deploy
+preDeploy = """
+echo "🚀 Preparando deploy de Milo's Shop..."
+echo "📊 Información del sistema:"
+node --version
+npm --version
+"""

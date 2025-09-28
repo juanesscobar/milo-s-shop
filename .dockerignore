@@ -1,94 +1,90 @@
-# Node modules
-node_modules
+# ================================================
+# .dockerignore optimizado para Milo's Shop
+# Reduce el contexto de build para mejor rendimiento
+# ================================================
+
+# ===== Node & NPM =====
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.npm
+.yarn
+.pnpm-store/
 
-# Base de datos local
-*.db
-*.sqlite
-*.sqlite3
+# ===== Build Outputs =====
+dist/
+build/
+.next/
+.nuxt/
+.cache/
+.parcel-cache/
+.turbo/
+*.tsbuildinfo
 
-# Archivos de desarrollo
+# ===== Development Files =====
+.env
 .env.local
 .env.development
 .env.test
+.env.production.local
+*.local
 
-# Logs
+# ===== Database Files =====
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+data/
+
+# ===== Test & Debug Files =====
+coverage/
+.nyc_output/
+test/
+tests/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+test-*.js
+test-*.json
+check-*.js
+seed-*.js
+fix-*.js
+create-*.js
+debug-*.js
+apply-*.js
+backup-*.cjs
+setup-*.js
+
+# ===== Logs =====
+logs/
+*.log
 logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage directory used by tools like istanbul
-coverage
-*.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-jspm_packages/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variables file
-.env
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# Next.js build output
-.next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# Editor directories and files
+# ===== IDE & Editor =====
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.sublime-workspace
+*.sublime-project
+.settings/
+.project
+.classpath
 
-# OS generated files
+# ===== OS Files =====
 .DS_Store
 .DS_Store?
 ._*
@@ -96,32 +92,70 @@ temp/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Git
-.git
+# ===== Git =====
+.git/
 .gitignore
+.gitattributes
+.github/
 
-# Docker
+# ===== Documentation =====
+README.md
+DEPLOYMENT.md
+MAINTENANCE.md
+API.md
+design_guidelines.md
+replit.md
+docs/
+*.md
+
+# ===== Docker Files (no incluir en contexto) =====
 Dockerfile*
 docker-compose*.yml
 .dockerignore
 
-# Documentación
-README.md
-*.md
-docs/
+# ===== CI/CD =====
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+jenkins/
+azure-pipelines.yml
 
-# Tests
-test/
-tests/
-*.test.js
-*.test.ts
-*.spec.js
-*.spec.ts
+# ===== Temporary Files =====
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
 
-# Archivos de configuración temporal
-check-*.js
-test-*.js
-seed-*.js
-fix-*.js
-create-*.js
+# ===== Package Manager Lock Files (opcional) =====
+# Comentar si necesitas reproducibilidad exacta
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ===== Misc Development Files =====
+.replit
+replit.nix
+components.json.bak
+vehicle-selection-final.png
+.kilocode/
+
+# ===== TypeScript Config (mantener para build) =====
+# NO ignorar estos archivos - necesarios para build:
+# tsconfig.json
+# drizzle.config.ts
+# vite.config.ts
+# tailwind.config.ts
+# postcss.config.js
+# components.json
+# package.json
+# package-lock.json
+
+# ===== Source Code (mantener para build) =====
+# NO ignorar estos directorios - necesarios para build:
+# client/
+# server/
+# shared/
+# migrations/

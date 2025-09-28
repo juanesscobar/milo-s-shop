@@ -1,0 +1,77 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "startCommand": "node --enable-source-maps dist/index.js",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 5,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "region": "us-west1"
+  },
+  "envVars": {
+    "NODE_ENV": "production",
+    "PORT": {
+      "default": "${{PORT}}"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string from Neon",
+      "required": true
+    },
+    "SESSION_SECRET": {
+      "description": "Secret for session encryption",
+      "generator": "secret",
+      "required": true
+    },
+    "ADMIN_WS_TOKEN": {
+      "description": "Admin WebSocket authentication token",
+      "generator": "secret",
+      "required": true
+    },
+    "CORS_ORIGIN": {
+      "description": "Frontend URL for CORS",
+      "default": "https://${{RAILWAY_STATIC_URL}}",
+      "required": false
+    },
+    "LOG_LEVEL": {
+      "default": "info",
+      "required": false
+    },
+    "SMTP_HOST": {
+      "description": "SMTP server for email notifications",
+      "required": false
+    },
+    "SMTP_PORT": {
+      "description": "SMTP port",
+      "default": "587",
+      "required": false
+    },
+    "SMTP_USER": {
+      "description": "SMTP username",
+      "required": false
+    },
+    "SMTP_PASS": {
+      "description": "SMTP password",
+      "required": false,
+      "secret": true
+    },
+    "STRIPE_SECRET_KEY": {
+      "description": "Stripe secret key for payments",
+      "required": false,
+      "secret": true
+    },
+    "MERCADOPAGO_ACCESS_TOKEN": {
+      "description": "MercadoPago access token",
+      "required": false,
+      "secret": true
+    },
+    "SENTRY_DSN": {
+      "description": "Sentry DSN for error tracking",
+      "required": false
+    }
+  }
+}
