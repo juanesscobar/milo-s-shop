@@ -141,6 +141,9 @@ replit.nix
 components.json.bak
 vehicle-selection-final.png
 .kilocode/
+.kilocodemodes
+railway.json
+railway.toml
 
 # ===== TypeScript Config (mantener para build) =====
 # NO ignorar estos archivos - necesarios para build:

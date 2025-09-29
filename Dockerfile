@@ -1,23 +1,24 @@
-# Use Node.js Alpine image
-FROM node:20-alpine
-
-# Set working directory
+# Etapa 1: build del frontend con Vite
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+COPY package*.json ./
+RUN npm install
 
-# Install production dependencies
-RUN npm ci --only=production
-
-# Copy source code
 COPY . .
-
-# Build the application
 RUN npm run build
 
-# Expose port
-EXPOSE 5000
+# Etapa 2: producción con Node + Express
+FROM node:20-alpine AS runner
+WORKDIR /app
 
-# Start the application
-CMD ["npm", "start"]
+# Copiar dependencias necesarias
+COPY package*.json ./
+RUN npm install --only=production
+
+# Copiar build y servidor
+COPY --from=builder /app/dist ./dist
+COPY server.js ./
+
+EXPOSE 3000
+CMD ["node", "server.js"]
