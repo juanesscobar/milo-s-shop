@@ -12,6 +12,7 @@ interface AdminAppProps {
 
 export default function AdminApp({ language = 'es' }: AdminAppProps) {
   const [currentLanguage, setCurrentLanguage] = useState<'es' | 'pt'>(language);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { joinAdminRoom, disconnect, isConnected } = useWebSocket();
@@ -28,7 +29,7 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   }, [joinAdminRoom, disconnect]);
 
   // Fetch today's bookings from backend
-  const { data: rawBookings = [], isLoading, error } = useQuery({
+  const { data: rawBookings = [], isLoading, error, isFetching } = useQuery({
     queryKey: ['/api/bookings/today'],
     retry: 3,
     retryDelay: 1000,
@@ -39,16 +40,9 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   // Debug logging for query success
   useEffect(() => {
     if (rawBookings.length > 0) {
-      console.log('🔍 DEBUG: AdminApp - Today bookings query success:', rawBookings.length, 'bookings');
+      console.log('Today bookings loaded:', rawBookings.length, 'bookings');
     }
   }, [rawBookings]);
-
-  // Debug logging for query error
-  useEffect(() => {
-    if (error) {
-      console.log('🔍 DEBUG: AdminApp - Today bookings query error:', error);
-    }
-  }, [error]);
 
   // Transform bookings data
   const bookings = rawBookings.map((booking: any) => ({
@@ -59,7 +53,9 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
   }));
 
   // Debug logs
-  console.log('AdminApp query state:', { isLoading, error: error?.message, bookingsCount: bookings.length });
+  if (error) {
+    console.error('AdminApp query error:', error.message);
+  }
 
   // Calculate stats based on real data
   const stats = {
@@ -148,8 +144,33 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
     }
   };
 
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ['/api/bookings/today'] });
+  const handleRefresh = async () => {
+    if (isRefreshing) return; // Prevent multiple clicks
+
+    setIsRefreshing(true);
+
+    // Safety timeout to reset isRefreshing if refetch takes too long
+    const timeoutId = setTimeout(() => {
+      setIsRefreshing(false);
+    }, 10000); // 10 seconds timeout
+
+    try {
+      await queryClient.refetchQueries({ queryKey: ['/api/bookings/today'] });
+      toast({
+        title: "✅ Datos actualizados",
+        description: "La información del dashboard ha sido refrescada.",
+      });
+    } catch (error) {
+      console.error('Error during refresh:', error);
+      toast({
+        title: "❌ Error al actualizar",
+        description: "No se pudieron refrescar los datos. Intenta nuevamente.",
+        variant: "destructive",
+      });
+    } finally {
+      clearTimeout(timeoutId);
+      setIsRefreshing(false);
+    }
   };
 
   if (error) {
@@ -177,6 +198,7 @@ export default function AdminApp({ language = 'es' }: AdminAppProps) {
         onViewDetails={handleViewDetails}
         onRefresh={handleRefresh}
         isLoading={isLoading}
+        isRefreshing={isRefreshing}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -69,13 +69,13 @@ export function useWebSocket() {
     };
   }, [toast]);
 
-  const joinAdminRoom = () => {
+  const joinAdminRoom = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.connect();
       // Send admin token for authentication
       const adminToken = import.meta.env.VITE_ADMIN_WS_TOKEN || 'admin-secret-key';
       socketRef.current.emit('join-admin', adminToken);
-      
+
       // Handle auth errors
       socketRef.current.on('auth-error', (message) => {
         console.error('Admin WebSocket auth error:', message);
@@ -86,13 +86,13 @@ export function useWebSocket() {
         });
       });
     }
-  };
+  }, [toast]);
 
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
-  };
+  }, []);
 
   return {
     socket: socketRef.current,

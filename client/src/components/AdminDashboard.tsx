@@ -30,6 +30,7 @@ interface AdminDashboardProps {
   onViewDetails: (bookingId: string) => void;
   onRefresh?: () => void;
   isLoading?: boolean;
+  isRefreshing?: boolean;
 }
 
 export default function AdminDashboard({
@@ -38,8 +39,10 @@ export default function AdminDashboard({
   onStatusUpdate,
   onViewDetails,
   onRefresh,
-  isLoading = false
+  isLoading = false,
+  isRefreshing = false
 }: AdminDashboardProps) {
+  console.log('🔄 DEBUG: AdminDashboard render - isRefreshing:', isRefreshing);
   const [currentView, setCurrentView] = useState<'dashboard' | 'bookings-list' | 'washing-detail' | 'completed-history' | 'revenue-detail' | 'services-management'>('dashboard');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -500,14 +503,14 @@ export default function AdminDashboard({
             {new Date().toLocaleDateString('es-ES')}
           </p>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           data-testid="button-refresh-dashboard"
           onClick={onRefresh}
-          disabled={isLoading}
+          disabled={isLoading || isRefreshing}
         >
           <TrendingUp className="h-4 w-4 mr-2" />
-          {isLoading ? 'Actualizando...' : 'Actualizar'}
+          {isRefreshing ? 'Actualizando...' : 'Actualizar'}
         </Button>
       </div>
 
