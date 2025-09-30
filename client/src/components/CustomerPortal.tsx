@@ -129,8 +129,19 @@ export default function CustomerPortal({
                 {services.map((service) => (
                   <ServiceCard
                     key={service.id}
-                    {...service}
-                    onSelect={handleServiceSelect}
+                    service={{
+                      id: service.id,
+                      slug: service.id, // assuming id is slug
+                      title: service.title,
+                      description: service.description,
+                      prices: service.prices,
+                      durationMin: service.duration || null,
+                      imageUrl: null,
+                      active: true,
+                      createdAt: new Date()
+                    }}
+                    language={language}
+                    onReserve={handleServiceSelect}
                   />
                 ))}
               </div>

@@ -10,13 +10,17 @@ interface ServiceCardProps {
   language: 'es' | 'pt';
   onReserve: (slug: string) => void;
   onUploadImage?: (slug: string, file: File) => void;
+  onSelect?: (serviceId: string) => void;
+  onGenerateImage?: (serviceId: string, file: File) => void;
 }
 
-export default function ServiceCard({ 
+export default function ServiceCard({
   service,
   language,
   onReserve,
-  onUploadImage
+  onUploadImage,
+  onSelect,
+  onGenerateImage
 }: ServiceCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);

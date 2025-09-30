@@ -129,11 +129,15 @@ export class DatabaseStorage implements IStorage {
     const bookingData = {
       id: bookingId,
       userId: insertBooking.userId,
+      vehicleId: insertBooking.vehicleId,
       serviceId: insertBooking.serviceId,
       date: insertBooking.date,
       timeSlot: insertBooking.timeSlot,
       price: insertBooking.price,
       status: insertBooking.status || "waiting",
+      paymentMethod: insertBooking.paymentMethod,
+      paymentCaptureUrl: insertBooking.paymentCaptureUrl,
+      notes: insertBooking.notes,
       createdAt: new Date()
     };
     await db.insert(bookings).values([bookingData]);

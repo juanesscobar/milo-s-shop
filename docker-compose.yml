@@ -9,7 +9,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
+      target: runner
       args:
         - NODE_ENV=production
         - PORT=${PORT:-5000}

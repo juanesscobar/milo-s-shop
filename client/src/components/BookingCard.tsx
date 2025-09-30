@@ -12,7 +12,7 @@ interface BookingCardProps {
   timeSlot: string;
   status: 'waiting' | 'washing' | 'done' | 'cancelled';
   price: number;
-  paymentMethod?: 'cash' | 'transfer' | 'pix';
+  paymentMethod?: 'cash' | 'transfer' | 'pix' | 'card';
   paymentStatus?: 'pending' | 'paid' | 'failed';
   paymentCaptureUrl?: string;
   onStatusUpdate?: (bookingId: string, newStatus: string) => void;
@@ -48,6 +48,7 @@ export default function BookingCard({
       case 'cash': return 'Efectivo';
       case 'transfer': return 'Transferencia';
       case 'pix': return 'PIX';
+      case 'card': return 'Tarjeta';
       default: return 'No definido';
     }
   };

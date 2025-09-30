@@ -25,6 +25,9 @@ Sentry.init({
 });
 
 const app = express();
+console.log('🚀 Iniciando servidor Milo\'s Shop...');
+console.log('📋 NODE_ENV:', process.env.NODE_ENV);
+console.log('🔌 PORT:', process.env.PORT);
 
 // IMPORTANT: Body parsers MUST come before any middleware that reads the request stream
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -93,7 +96,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  console.log('🔧 Registrando rutas...');
   const server = await registerRoutes(app);
+  console.log('✅ Rutas registradas exitosamente');
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -119,6 +124,7 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
     serveStatic(app);
@@ -172,7 +178,9 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '3000', 10);
+  console.log(`🌐 Intentando escuchar en puerto ${port} en 0.0.0.0`);
   server.listen(port, '0.0.0.0', () => {
+    console.log(`✅ Servidor escuchando en puerto ${port}`);
     log(`serving on port ${port}`);
   });
 })();

@@ -22,9 +22,20 @@ export default function ServiceCardExample() {
 
   return (
     <div className="p-4">
-      <ServiceCard 
-        {...mockService}
-        onSelect={handleSelect}
+      <ServiceCard
+        service={{
+          id: mockService.id,
+          slug: mockService.id,
+          title: mockService.title,
+          description: mockService.description,
+          prices: mockService.prices,
+          durationMin: mockService.duration,
+          imageUrl: mockService.imageUrl,
+          active: true,
+          createdAt: new Date()
+        }}
+        language="es"
+        onReserve={handleSelect}
       />
     </div>
   );
