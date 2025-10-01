@@ -1,4 +1,4 @@
-app = "milo-s-shop"
+app = "Milo's-Shop"
 
 [build]
   dockerfile = "Dockerfile"
@@ -13,6 +13,8 @@ app = "milo-s-shop"
   auto_start_machines = true
 
   [[http_service.checks]]
-    interval = "15s"
-    timeout = "2s"
-    grace_period = "10s"
+    interval = "30s"
+    timeout = "10s"
+    grace_period = "30s"
+    method = "get"
+    path = "/api/health"

@@ -1,6 +1,6 @@
 import 'dotenv/config';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import * as schema from "@shared/auth-schema";
 
 if (!process.env.DATABASE_URL) {
@@ -9,5 +9,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-const sqlite = new Database(process.env.DATABASE_URL.replace('file:', ''));
-export const db = drizzle({ client: sqlite, schema });
+// Configure postgres client for development and production
+const client = postgres(process.env.DATABASE_URL, {
+  prepare: false,
+  max: 1,
+});
+
+export const db = drizzle({ client, schema });

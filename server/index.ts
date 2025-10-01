@@ -173,14 +173,15 @@ app.use((req, res, next) => {
     });
   });
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 3000 for testing if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '3000', 10);
-  console.log(`🌐 Intentando escuchar en puerto ${port} en 0.0.0.0`);
-  server.listen(port, '0.0.0.0', () => {
-    console.log(`✅ Servidor escuchando en puerto ${port}`);
+  // Use different default ports for development vs production
+  const isDevelopment = app.get("env") === "development";
+  const defaultPort = isDevelopment ? 5000 : 10000;
+  const port = parseInt(process.env.PORT || defaultPort.toString(), 10);
+
+  const bindAddress = isDevelopment ? 'localhost' : '0.0.0.0';
+  console.log(`🌐 Intentando escuchar en puerto ${port} en ${bindAddress}`);
+  server.listen(port, bindAddress, () => {
+    console.log(`✅ Servidor escuchando en puerto ${port} (${bindAddress})`);
     log(`serving on port ${port}`);
   });
 })();

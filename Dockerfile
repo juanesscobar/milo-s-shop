@@ -53,15 +53,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/build ./build
 # Variables de entorno
 ENV NODE_ENV=production
 
-# Fly.io y Railway pasarán PORT dinámicamente
-ENV PORT=8080
+# Puerto por defecto (Render usa 10000, pero se puede sobrescribir con variable de entorno)
+ENV PORT=10000
 
-# Exponer puerto esperado por Fly.io
-EXPOSE 8080
+# Exponer puerto dinámico
+EXPOSE 10000
 
-# Healthcheck básico
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get(`http://localhost:${process.env.PORT || 8080}/api/health`, (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"
+# Healthcheck optimizado para PostgreSQL y servicios cloud (Render, Fly.io, Railway)
+# Usa el puerto de la variable de entorno PORT
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD node -e "const http = require('http'); const port = process.env.PORT || 10000; const req = http.get('http://localhost:' + port + '/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.setTimeout(10000, () => { req.destroy(); process.exit(1); });"
 
 # Cambiar a usuario no-root
 USER nextjs

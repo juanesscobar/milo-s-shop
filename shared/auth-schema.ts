@@ -1,67 +1,58 @@
 import { sql, relations } from "drizzle-orm";
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Production-ready Users table according to specifications
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").unique(), // Unique email constraint
-  phone: text("phone").notNull().unique(), // Unique phone constraint
-  passwordHash: text("password_hash").notNull(), // Never exposed in API responses
-  role: text("role", { enum: ['client', 'admin'] }).notNull().default('client'),
-  companyId: integer("company_id"), // Nullable integer for admins only
-  emailVerified: integer("email_verified", { mode: 'boolean' }).default(false).notNull(),
-  // MFA fields
-  mfaSecret: text("mfa_secret"), // TOTP secret for MFA
-  mfaEnabled: integer("mfa_enabled", { mode: 'boolean' }).default(false).notNull(), // Whether MFA is enabled
-  mfaBackupCodes: text("mfa_backup_codes"), // JSON array of backup codes
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
-  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  email: text("email"), // Unique constraint will be added via migration
+  phone: text("phone").notNull(), // Unique constraint will be added via migration
+  password: text("password").notNull(), // Never exposed in API responses
+  role: text("role").$type<'client' | 'admin'>().notNull().default('client'),
+  language: text("language").notNull().default('es'),
+  isGuest: text("is_guest").default('true').notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Companies table for admin management
-export const companies = sqliteTable("companies", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
+export const companies = pgTable("companies", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull(),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
-  updatedAt: integer("updated_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Sessions table for PostgreSQL session store (using SQLite for compatibility)
-export const sessions = sqliteTable("sessions", {
+// Sessions table for PostgreSQL session store
+export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   data: text("data").notNull(), // Serialized session data
-  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Email verification tokens table
-export const emailVerificationTokens = sqliteTable("email_verification_tokens", {
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   token: text("token").notNull().unique(),
-  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Password reset tokens table
-export const passwordResetTokens = sqliteTable("password_reset_tokens", {
+export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   token: text("token").notNull().unique(),
-  expiresAt: integer("expires_at", { mode: 'timestamp' }).notNull(),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Relations
-export const usersRelations = relations(users, ({ one, many }) => ({
-  company: one(companies, {
-    fields: [users.companyId],
-    references: [companies.id],
-  }),
+export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   emailVerificationTokens: many(emailVerificationTokens),
   passwordResetTokens: many(passwordResetTokens),
@@ -157,13 +148,10 @@ export const loginSchema = z.object({
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
 });
 
 export const selectUserSchema = createSelectSchema(users).omit({
-  passwordHash: true, // Never expose password hash
-  mfaSecret: true, // Never expose MFA secret
-  mfaBackupCodes: true, // Never expose backup codes
+  password: true, // Never expose password hash
 });
 
 export const insertCompanySchema = createInsertSchema(companies).omit({

@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: milos-postgres-dev
+    environment:
+      POSTGRES_DB: milos_shop
+      POSTGRES_USER: milos
+      POSTGRES_PASSWORD: milos123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U milos -d milos_shop"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_dev_data:

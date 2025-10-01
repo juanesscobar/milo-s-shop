@@ -74,9 +74,30 @@ export class DatabaseStorage implements IStorage {
 
   // Services
   async getAllServices(): Promise<Service[]> {
-    const result = await db.select().from(services).where(eq(services.active, true));
+    const result = await db.select().from(services).where(eq(services.active, "true"));
     console.log('getAllServices result:', result.length, 'services');
-    return result;
+    
+    // Parse prices from JSON string to object if needed
+    return result.map(service => {
+      let parsedPrices = service.prices;
+      
+      // If prices is a string and looks like JSON, parse it
+      if (typeof service.prices === 'string') {
+        try {
+          // Check if it's a JSON string (starts with { or [)
+          if (service.prices.trim().startsWith('{') || service.prices.trim().startsWith('[')) {
+            parsedPrices = JSON.parse(service.prices);
+          }
+        } catch (e) {
+          console.warn('Failed to parse prices for service', service.id, ':', e);
+        }
+      }
+      
+      return {
+        ...service,
+        prices: parsedPrices
+      };
+    });
   }
 
   async getService(id: string): Promise<Service | undefined> {

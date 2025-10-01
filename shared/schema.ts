@@ -1,10 +1,10 @@
 import { sql, relations } from "drizzle-orm";
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Simplified Users table for authentication testing
-export const users = sqliteTable("users", {
+export const users = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   phone: text("phone").notNull(),
@@ -12,34 +12,34 @@ export const users = sqliteTable("users", {
   password: text("password"),
   role: text("role").notNull().default("client"),
   language: text("language").notNull().default("es"),
-  isGuest: integer("is_guest", { mode: 'boolean' }).default(true).notNull(),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`unixepoch()`).notNull(),
+  isGuest: text("is_guest").default("true").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Simplified Vehicles table
-export const vehicles = sqliteTable("vehicles", {
+export const vehicles = pgTable("vehicles", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),
   plate: text("plate").notNull(),
   type: text("type").notNull(),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Simplified Services table for testing
-export const services = sqliteTable("services", {
+export const services = pgTable("services", {
   id: text("id").primaryKey(),
   slug: text("slug").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  prices: text("prices", { mode: 'json' }).$type<{auto?: number; suv?: number; camioneta?: number}>(),
+  prices: text("prices").$type<{auto?: number; suv?: number; camioneta?: number}>(),
   durationMin: integer("duration_min"),
   imageUrl: text("image_url"),
-  active: integer("active", { mode: 'boolean' }).default(true).notNull(),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  active: text("active").default("true").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Simplified Bookings table
-export const bookings = sqliteTable("bookings", {
+export const bookings = pgTable("bookings", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),
   vehicleId: text("vehicle_id").notNull().references(() => vehicles.id),
@@ -51,7 +51,7 @@ export const bookings = sqliteTable("bookings", {
   paymentMethod: text("payment_method"),
   paymentCaptureUrl: text("payment_capture_url"),
   notes: text("notes"),
-  createdAt: integer("created_at", { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Relations

@@ -44,6 +44,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
+    const startTime = Date.now();
+    console.log("🔍 HEALTH CHECK: Request received from", req.ip);
+
     try {
       // Basic health check - verify database connection
       const healthCheck: any = {
@@ -51,28 +54,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || "development",
+        version: process.env.npm_package_version || "unknown",
+        nodeVersion: process.version,
+        platform: process.platform,
         memory: {
           used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+          total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+          external: Math.round(process.memoryUsage().external / 1024 / 1024)
         },
-        database: "unknown"
+        cpu: process.cpuUsage(),
+        database: "unknown",
+        responseTime: 0,
+        requestInfo: {
+          ip: req.ip,
+          userAgent: req.get('User-Agent'),
+          headers: req.headers
+        }
       };
+
+      console.log("🔍 HEALTH CHECK: Basic system info collected");
 
       // Quick DB check (optional - comment out if causing issues)
       try {
+        const dbStartTime = Date.now();
         await db.select().from(authUsers).limit(1);
+        const dbResponseTime = Date.now() - dbStartTime;
         healthCheck.database = "connected";
+        healthCheck.databaseResponseTime = dbResponseTime;
+        console.log(`🔍 HEALTH CHECK: Database check successful (${dbResponseTime}ms)`);
       } catch (dbError) {
-        console.error("Health check DB error:", dbError);
+        console.error("❌ HEALTH CHECK: Database error:", dbError);
         healthCheck.database = "disconnected";
+        healthCheck.databaseError = dbError instanceof Error ? dbError.message : String(dbError);
+        // Don't fail the entire health check for DB issues unless critical
       }
+
+      // Check if server can handle requests
+      try {
+        const serverStartTime = Date.now();
+        // Simple internal check - see if we can resolve routes
+        const routeStack = app._router.stack.length;
+        healthCheck.routes = routeStack;
+        healthCheck.serverResponseTime = Date.now() - serverStartTime;
+        console.log(`🔍 HEALTH CHECK: Server routes check successful (${routeStack} routes)`);
+      } catch (serverError) {
+        console.error("❌ HEALTH CHECK: Server error:", serverError);
+        healthCheck.serverError = serverError instanceof Error ? serverError.message : String(serverError);
+      }
+
+      healthCheck.responseTime = Date.now() - startTime;
+      console.log(`✅ HEALTH CHECK: Completed successfully in ${healthCheck.responseTime}ms`);
 
       res.status(200).json(healthCheck);
     } catch (error) {
-      console.error("Health check failed:", error);
+      const responseTime = Date.now() - startTime;
+      console.error(`❌ HEALTH CHECK: Failed after ${responseTime}ms:`, error);
+
       res.status(503).json({
         status: "unhealthy",
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
+        responseTime,
+        timestamp: new Date().toISOString(),
+        stack: error instanceof Error ? error.stack : undefined
       });
     }
   });
@@ -153,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: name.trim(),
         phone: phone,
         email: email || null,
-        passwordHash: hashedPassword,
+        password: hashedPassword,
         role: 'client' as const,
         companyId: null,
         createdAt: new Date(),
@@ -169,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req.session as any).userRole = 'client';
 
       // Return user without sensitive data
-      const { passwordHash: _, ...userWithoutPassword } = userData;
+      const { password: _, ...userWithoutPassword } = userData;
       res.status(201).json({ user: userWithoutPassword, message: "User registered successfully" });
     } catch (error) {
       console.error("Error registering user:", error);
@@ -225,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: name.trim(),
         phone: phone,
         email: email,
-        passwordHash: hashedPassword,
+        password: hashedPassword,
         role: 'admin' as const,
         companyId: companyId,
         createdAt: new Date(),
@@ -241,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req.session as any).userRole = 'admin';
 
       // Return user without sensitive data
-      const { passwordHash: _, ...userWithoutPassword } = userData;
+      const { password: _, ...userWithoutPassword } = userData;
       res.status(201).json({ user: userWithoutPassword, message: "Admin registered successfully" });
     } catch (error) {
       console.error("Error registering admin:", error);
@@ -271,7 +315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [user] = phoneResults;
         console.log('🔍 DEBUG: Phone search result:', user ? 'FOUND' : 'NOT FOUND');
         if (user) {
-          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, phone: user.phone, hasPassword: !!user.passwordHash });
+          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, phone: user.phone, hasPassword: !!user.password });
         }
       } else if (email) {
         console.log('🔍 Searching user by email:', email);
@@ -279,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         [user] = emailResults;
         console.log('🔍 DEBUG: Email search result:', user ? 'FOUND' : 'NOT FOUND');
         if (user) {
-          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, email: user.email, hasPassword: !!user.passwordHash });
+          console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, email: user.email, hasPassword: !!user.password });
         }
       }
 
@@ -294,11 +338,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('User found:', user.id);
 
       // Check password
-      if (!user.passwordHash) {
+      if (!user.password) {
         return res.status(400).json({ error: "Password authentication required" });
       }
 
-      const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+      const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
         return res.status(401).json({ error: "Invalid password" });
       }
@@ -308,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req.session as any).userRole = user.role;
 
       // Return user without sensitive data
-      const { passwordHash: _, ...userWithoutPassword } = user;
+      const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword, message: "Login successful" });
     } catch (error) {
       console.error("Error logging in user:", error);
@@ -345,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return user without sensitive data
-      const { passwordHash: _, ...userWithoutPassword } = user;
+      const { password: _, ...userWithoutPassword } = user;
       res.json({ user: userWithoutPassword });
     } catch (error) {
       console.error("Error fetching current user:", error);
@@ -370,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'authUsers');
       console.log('🔍 DEBUG: All authUsers in database:');
       allUsers.forEach((user: any) => {
-        console.log(`   - ID: ${user.id}, Name: ${user.name}, Phone: ${user.phone}, Email: ${user.email}, HasPassword: ${!!user.passwordHash}`);
+        console.log(`   - ID: ${user.id}, Name: ${user.name}, Phone: ${user.phone}, Email: ${user.email}, HasPassword: ${!!user.password}`);
       });
       res.json({
         count: allUsers.length,
@@ -380,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone: u.phone,
           email: u.email,
           role: u.role,
-          hasPassword: !!u.passwordHash,
+          hasPassword: !!u.password,
           createdAt: u.createdAt
         }))
       });
@@ -425,7 +469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingUser) {
         console.log('User already exists:', existingUser.id);
         // Return existing user instead of error for booking flow compatibility
-        const { passwordHash: _, ...userWithoutPassword } = existingUser;
+        const { password: _, ...userWithoutPassword } = existingUser;
         return res.status(200).json(userWithoutPassword);
       }
 
@@ -438,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: name.trim(),
         phone: phone,
         email: email || null,
-        passwordHash: '', // Empty password hash for booking flow authUsers (they can't login)
+        password: '', // Empty password hash for booking flow authUsers (they can't login)
         role: (role as 'client' | 'admin') || 'client',
         companyId: null,
         createdAt: new Date(),
@@ -450,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Created guest user:', userId);
 
       // Return user without password field
-      const { passwordHash: _, ...userWithoutPassword } = userData;
+      const { password: _, ...userWithoutPassword } = userData;
       res.status(201).json(userWithoutPassword);
     } catch (error) {
       console.error("❌ Error creating user:", error);
