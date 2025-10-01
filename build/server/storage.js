@@ -95,9 +95,8 @@ var DatabaseStorage = /** @class */ (function () {
     DatabaseStorage.prototype.createUser = function (insertUser) {
         return __awaiter(this, void 0, void 0, function () {
             var userId, userData;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         console.log('🔍 DEBUG: Creating user with data:', insertUser);
                         userId = "user_".concat(Date.now(), "_").concat(Math.random().toString(36).substr(2, 9));
@@ -106,16 +105,16 @@ var DatabaseStorage = /** @class */ (function () {
                             name: insertUser.name,
                             phone: insertUser.phone,
                             email: insertUser.email || null,
-                            password: insertUser.password || null, // Include password if provided
+                            password: insertUser.password || null,
                             role: insertUser.role || "client",
                             language: insertUser.language || "es",
-                            isGuest: (_a = insertUser.isGuest) !== null && _a !== void 0 ? _a : true,
+                            isGuest: String(insertUser.isGuest || "true"),
                             createdAt: new Date()
                         };
                         console.log('🔍 DEBUG: User data to insert:', __assign(__assign({}, userData), { password: userData.password ? '[HIDDEN]' : 'null' }));
-                        return [4 /*yield*/, db.insert(users).values([userData])];
+                        return [4 /*yield*/, db.insert(users).values(userData)];
                     case 1:
-                        _b.sent();
+                        _a.sent();
                         console.log('✅ User created successfully with ID:', userId);
                         return [2 /*return*/, userData];
                 }
@@ -128,11 +127,30 @@ var DatabaseStorage = /** @class */ (function () {
             var result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, db.select().from(services).where(eq(services.active, true))];
+                    case 0: return [4 /*yield*/, db.select().from(services).where(eq(services.active, "true"))];
                     case 1:
                         result = _a.sent();
                         console.log('getAllServices result:', result.length, 'services');
-                        return [2 /*return*/, result];
+                        // Parse prices from JSON string to object if needed
+                        return [2 /*return*/, result.map(function (service) {
+                                var parsedPrices = service.prices;
+                                // If prices is a string and looks like JSON, parse it
+                                // Note: prices is typed as object but stored as text in DB
+                                var pricesValue = service.prices;
+                                if (typeof pricesValue === 'string') {
+                                    try {
+                                        var trimmedPrices = pricesValue.trim();
+                                        // Check if it's a JSON string (starts with { or [)
+                                        if (trimmedPrices.startsWith('{') || trimmedPrices.startsWith('[')) {
+                                            parsedPrices = JSON.parse(trimmedPrices);
+                                        }
+                                    }
+                                    catch (e) {
+                                        console.warn('Failed to parse prices for service', service.id, ':', e);
+                                    }
+                                }
+                                return __assign(__assign({}, service), { prices: parsedPrices });
+                            })];
                 }
             });
         });

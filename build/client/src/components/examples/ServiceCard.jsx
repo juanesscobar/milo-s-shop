@@ -26,7 +26,7 @@ export default function ServiceCardExample() {
             prices: mockService.prices,
             durationMin: mockService.duration,
             imageUrl: mockService.imageUrl,
-            active: true,
+            active: "true",
             createdAt: new Date()
         }} language="es" onReserve={handleSelect}/>
     </div>);

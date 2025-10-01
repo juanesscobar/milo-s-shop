@@ -1,12 +1,8 @@
-var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
-    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
-    return cooked;
-};
-import { sql, relations } from "drizzle-orm";
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
+import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 // Simplified Users table for authentication testing
-export var users = sqliteTable("users", {
+export var users = pgTable("users", {
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     phone: text("phone").notNull(),
@@ -14,31 +10,31 @@ export var users = sqliteTable("users", {
     password: text("password"),
     role: text("role").notNull().default("client"),
     language: text("language").notNull().default("es"),
-    isGuest: integer("is_guest", { mode: 'boolean' }).default(true).notNull(),
-    createdAt: integer("created_at", { mode: 'timestamp' }).default(sql(templateObject_1 || (templateObject_1 = __makeTemplateObject(["unixepoch()"], ["unixepoch()"])))).notNull(),
+    isGuest: text("is_guest").default("true").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 // Simplified Vehicles table
-export var vehicles = sqliteTable("vehicles", {
+export var vehicles = pgTable("vehicles", {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().references(function () { return users.id; }),
     plate: text("plate").notNull(),
     type: text("type").notNull(),
-    createdAt: integer("created_at", { mode: 'timestamp' }).default(sql(templateObject_2 || (templateObject_2 = __makeTemplateObject(["(strftime('%s', 'now'))"], ["(strftime('%s', 'now'))"])))).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 // Simplified Services table for testing
-export var services = sqliteTable("services", {
+export var services = pgTable("services", {
     id: text("id").primaryKey(),
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull(),
-    prices: text("prices", { mode: 'json' }).$type(),
+    prices: text("prices").$type(),
     durationMin: integer("duration_min"),
     imageUrl: text("image_url"),
-    active: integer("active", { mode: 'boolean' }).default(true).notNull(),
-    createdAt: integer("created_at", { mode: 'timestamp' }).default(sql(templateObject_3 || (templateObject_3 = __makeTemplateObject(["(strftime('%s', 'now'))"], ["(strftime('%s', 'now'))"])))).notNull(),
+    active: text("active").default("true").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 // Simplified Bookings table
-export var bookings = sqliteTable("bookings", {
+export var bookings = pgTable("bookings", {
     id: text("id").primaryKey(),
     userId: text("user_id").notNull().references(function () { return users.id; }),
     vehicleId: text("vehicle_id").notNull().references(function () { return vehicles.id; }),
@@ -50,7 +46,7 @@ export var bookings = sqliteTable("bookings", {
     paymentMethod: text("payment_method"),
     paymentCaptureUrl: text("payment_capture_url"),
     notes: text("notes"),
-    createdAt: integer("created_at", { mode: 'timestamp' }).default(sql(templateObject_4 || (templateObject_4 = __makeTemplateObject(["(strftime('%s', 'now'))"], ["(strftime('%s', 'now'))"])))).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 // Relations
 export var usersRelations = relations(users, function (_a) {
@@ -110,4 +106,3 @@ export var insertBookingSchema = createInsertSchema(bookings).omit({
     id: true,
     createdAt: true,
 });
-var templateObject_1, templateObject_2, templateObject_3, templateObject_4;

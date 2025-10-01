@@ -137,7 +137,7 @@ export default function CustomerPortal({
                       prices: service.prices,
                       durationMin: service.duration || null,
                       imageUrl: null,
-                      active: true,
+                      active: "true",
                       createdAt: new Date()
                     }}
                     language={language}

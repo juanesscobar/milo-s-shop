@@ -89,7 +89,7 @@ export default function CustomerPortal(_a) {
                 prices: service.prices,
                 durationMin: service.duration || null,
                 imageUrl: null,
-                active: true,
+                active: "true",
                 createdAt: new Date()
             }} language={language} onReserve={handleServiceSelect}/>); })}
               </div>

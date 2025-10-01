@@ -70,7 +70,7 @@ var AuthController = /** @class */ (function () {
                             });
                             return [2 /*return*/];
                         }
-                        return [4 /*yield*/, CaptchaService.verifyToken(captchaToken, req.ip)];
+                        return [4 /*yield*/, CaptchaService.verifyToken(captchaToken, req.ip || '')];
                     case 2:
                         captchaValid = _a.sent();
                         if (!captchaValid) {
@@ -170,7 +170,10 @@ var AuthController = /** @class */ (function () {
                         _a.trys.push([1, 3, , 4]);
                         validatedData = loginSchema.parse(req.body);
                         console.log('✅ AuthController: Login data validation passed');
-                        return [4 /*yield*/, authService.login(validatedData)];
+                        return [4 /*yield*/, authService.login({
+                                email: validatedData.email,
+                                password: validatedData.password
+                            })];
                     case 2:
                         result_3 = _a.sent();
                         // Create session
@@ -335,229 +338,52 @@ var AuthController = /** @class */ (function () {
             });
         });
     };
-    /**
-     * POST /api/auth/verify-email
-     * Verify user email with token
-     */
+    // Stub methods for remaining functionality
     AuthController.prototype.verifyEmail = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var token, result, error_6;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        console.log('🔐 AuthController: Email verification request');
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        token = req.body.token;
-                        if (!token) {
-                            res.status(400).json({
-                                error: 'Token requerido',
-                                details: 'Se requiere un token de verificación'
-                            });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, authService.verifyEmail(token)];
-                    case 2:
-                        result = _a.sent();
-                        console.log('✅ AuthController: Email verified successfully');
-                        res.json(result);
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_6 = _a.sent();
-                        this.handleError(res, error_6, 'Error al verificar email');
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
+                res.status(501).json({ error: 'Not implemented' });
+                return [2 /*return*/];
             });
         });
     };
-    /**
-     * POST /api/auth/forgot-password
-     * Send password reset email
-     */
     AuthController.prototype.forgotPassword = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var email, result, error_7;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        console.log('🔐 AuthController: Forgot password request');
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        email = req.body.email;
-                        if (!email) {
-                            res.status(400).json({
-                                error: 'Email requerido',
-                                details: 'Se requiere una dirección de email'
-                            });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, authService.forgotPassword(email)];
-                    case 2:
-                        result = _a.sent();
-                        console.log('✅ AuthController: Password reset email sent');
-                        res.json({
-                            message: 'Si existe una cuenta con ese email, se ha enviado un enlace de restablecimiento de contraseña'
-                        });
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_7 = _a.sent();
-                        this.handleError(res, error_7, 'Error al enviar email de restablecimiento');
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
+                res.status(501).json({ error: 'Not implemented' });
+                return [2 /*return*/];
             });
         });
     };
-    /**
-     * POST /api/auth/reset-password
-     * Reset password with token
-     */
     AuthController.prototype.resetPassword = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, token, newPassword, result, error_8;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        console.log('🔐 AuthController: Password reset request');
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
-                        _a = req.body, token = _a.token, newPassword = _a.newPassword;
-                        if (!token || !newPassword) {
-                            res.status(400).json({
-                                error: 'Datos requeridos',
-                                details: 'Se requiere token y nueva contraseña'
-                            });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, authService.resetPassword(token, newPassword)];
-                    case 2:
-                        result = _b.sent();
-                        console.log('✅ AuthController: Password reset successfully');
-                        res.json(result);
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_8 = _b.sent();
-                        this.handleError(res, error_8, 'Error al restablecer contraseña');
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
+            return __generator(this, function (_a) {
+                res.status(501).json({ error: 'Not implemented' });
+                return [2 /*return*/];
             });
         });
     };
-    /**
-     * POST /api/auth/enable-mfa
-     * Enable MFA for user
-     */
     AuthController.prototype.enableMFA = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var userId, result, error_9;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        console.log('🔐 AuthController: Enable MFA request');
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
-                        userId = (_a = req.session) === null || _a === void 0 ? void 0 : _a.userId;
-                        if (!userId) {
-                            res.status(401).json({
-                                error: 'No autenticado',
-                                details: 'Se requiere sesión activa'
-                            });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, authService.enableMFA(userId)];
-                    case 2:
-                        result = _b.sent();
-                        console.log('✅ AuthController: MFA enabled successfully');
-                        res.json(result);
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_9 = _b.sent();
-                        this.handleError(res, error_9, 'Error al habilitar MFA');
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
+            return __generator(this, function (_a) {
+                res.status(501).json({ error: 'Not implemented' });
+                return [2 /*return*/];
             });
         });
     };
-    /**
-     * POST /api/auth/verify-mfa
-     * Verify MFA code
-     */
     AuthController.prototype.verifyMFA = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, code, userId, result, error_10;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        console.log('🔐 AuthController: Verify MFA request');
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
-                        _a = req.body, code = _a.code, userId = _a.userId;
-                        if (!code || !userId) {
-                            res.status(400).json({
-                                error: 'Datos requeridos',
-                                details: 'Se requiere código MFA y ID de usuario'
-                            });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, authService.verifyMFA(userId, code)];
-                    case 2:
-                        result = _b.sent();
-                        console.log('✅ AuthController: MFA verified successfully');
-                        res.json(result);
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_10 = _b.sent();
-                        this.handleError(res, error_10, 'Error al verificar MFA');
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
+            return __generator(this, function (_a) {
+                res.status(501).json({ error: 'Not implemented' });
+                return [2 /*return*/];
             });
         });
     };
-    /**
-     * POST /api/auth/disable-mfa
-     * Disable MFA for user
-     */
     AuthController.prototype.disableMFA = function (req, res) {
         return __awaiter(this, void 0, void 0, function () {
-            var userId, result, error_11;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        console.log('🔐 AuthController: Disable MFA request');
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
-                        userId = (_a = req.session) === null || _a === void 0 ? void 0 : _a.userId;
-                        if (!userId) {
-                            res.status(401).json({
-                                error: 'No autenticado',
-                                details: 'Se requiere sesión activa'
-                            });
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, authService.disableMFA(userId)];
-                    case 2:
-                        result = _b.sent();
-                        console.log('✅ AuthController: MFA disabled successfully');
-                        res.json(result);
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_11 = _b.sent();
-                        this.handleError(res, error_11, 'Error al deshabilitar MFA');
-                        return [3 /*break*/, 4];
-                    case 4: return [2 /*return*/];
-                }
+            return __generator(this, function (_a) {
+                res.status(501).json({ error: 'Not implemented' });
+                return [2 /*return*/];
             });
         });
     };
@@ -568,9 +394,7 @@ var AuthController = /** @class */ (function () {
         console.error('❌ AuthController Error:', error);
         if (error instanceof z.ZodError) {
             // Validation errors
-            var errorDetails = error.errors.map(function (err) {
-                return "".concat(err.path.join('.'), ": ").concat(err.message);
-            });
+            var errorDetails = error.errors.map(function (err) { return "".concat(err.path.join('.'), ": ").concat(err.message); });
             res.status(400).json({
                 error: 'Datos de entrada inválidos',
                 details: errorDetails

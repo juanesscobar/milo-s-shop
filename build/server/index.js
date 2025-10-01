@@ -143,7 +143,7 @@ app.use(function (req, res, next) {
     next();
 });
 (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var server, setupVite_1, port;
+    var server, setupVite_1, isDevelopment, defaultPort, port, bindAddress;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -214,10 +214,13 @@ app.use(function (req, res, next) {
                         process.exit(0);
                     });
                 });
-                port = parseInt(process.env.PORT || '3000', 10);
-                console.log("\uD83C\uDF10 Intentando escuchar en puerto ".concat(port, " en 0.0.0.0"));
-                server.listen(port, '0.0.0.0', function () {
-                    console.log("\u2705 Servidor escuchando en puerto ".concat(port));
+                isDevelopment = app.get("env") === "development";
+                defaultPort = isDevelopment ? 5000 : 10000;
+                port = parseInt(process.env.PORT || defaultPort.toString(), 10);
+                bindAddress = isDevelopment ? 'localhost' : '0.0.0.0';
+                console.log("\uD83C\uDF10 Intentando escuchar en puerto ".concat(port, " en ").concat(bindAddress));
+                server.listen(port, bindAddress, function () {
+                    console.log("\u2705 Servidor escuchando en puerto ".concat(port, " (").concat(bindAddress, ")"));
                     log("serving on port ".concat(port));
                 });
                 return [2 /*return*/];

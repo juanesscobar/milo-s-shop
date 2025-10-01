@@ -1,6 +1,6 @@
 import express from 'express';
 import { authController } from './authController';
-import { rateLimitMiddleware, authMiddleware } from './authMiddleware.js';
+import { rateLimitMiddleware, authMiddleware } from './authMiddleware';
 /**
  * AuthRoutes - Organizes all authentication-related routes
  * Implements route protection, rate limiting, and proper HTTP methods

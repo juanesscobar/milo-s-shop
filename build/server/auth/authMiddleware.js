@@ -37,10 +37,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 import rateLimit from 'express-rate-limit';
 import { authService } from './authService';
 /**
- * AuthMiddleware - Security middleware for authentication system
- * Implements rate limiting, CSRF protection, and session validation
- */
-/**
  * Rate limiting middleware factory
  * @param options Rate limit configuration
  */
@@ -133,7 +129,8 @@ export function optionalAuthMiddleware(req, res, next) {
             switch (_c.label) {
                 case 0:
                     userId = (_a = req.session) === null || _a === void 0 ? void 0 : _a.userId;
-                    if (!userId) return [3 /*break*/, 4];
+                    if (!userId)
+                        return [2 /*return*/, next()];
                     _c.label = 1;
                 case 1:
                     _c.trys.push([1, 3, , 4]);

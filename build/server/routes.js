@@ -63,15 +63,11 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcrypt';
 import { storage } from "./storage";
-import { insertBookingSchema, services } from "@shared/schema";
+import { insertBookingSchema, services, users } from "@shared/schema";
 import { z } from "zod";
-// Import schema from db configuration (uses @shared/auth-schema)
+// Import schema from db configuration
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users as authUsers } from "@shared/auth-schema";
-// Auth schema import moved above
-// Import auth controller
-import { authController } from './auth/authController';
 // Admin middleware
 var requireAdmin = function (req, res, next) {
     console.log('🔍 DEBUG: requireAdmin - Session userId:', req.session.userId);
@@ -95,47 +91,87 @@ export function registerRoutes(app) {
             console.log('🔧 Registering routes...');
             // Health check endpoint
             app.get("/api/health", function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-                var healthCheck, dbError_1, error_1;
+                var startTime, healthCheck, dbStartTime, dbResponseTime, dbError_1, serverStartTime, routeStack, error_1, responseTime;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            _a.trys.push([0, 5, , 6]);
+                            startTime = Date.now();
+                            console.log("🔍 HEALTH CHECK: Request received from", req.ip);
+                            _a.label = 1;
+                        case 1:
+                            _a.trys.push([1, 6, , 7]);
                             healthCheck = {
                                 status: "healthy",
                                 timestamp: new Date().toISOString(),
                                 uptime: process.uptime(),
                                 environment: process.env.NODE_ENV || "development",
+                                version: process.env.npm_package_version || "unknown",
+                                nodeVersion: process.version,
+                                platform: process.platform,
                                 memory: {
                                     used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
-                                    total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+                                    total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+                                    rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+                                    external: Math.round(process.memoryUsage().external / 1024 / 1024)
                                 },
-                                database: "unknown"
+                                cpu: process.cpuUsage(),
+                                database: "unknown",
+                                responseTime: 0,
+                                requestInfo: {
+                                    ip: req.ip,
+                                    userAgent: req.get('User-Agent'),
+                                    headers: req.headers
+                                }
                             };
-                            _a.label = 1;
-                        case 1:
-                            _a.trys.push([1, 3, , 4]);
-                            return [4 /*yield*/, db.select().from(authUsers).limit(1)];
+                            console.log("🔍 HEALTH CHECK: Basic system info collected");
+                            _a.label = 2;
                         case 2:
-                            _a.sent();
-                            healthCheck.database = "connected";
-                            return [3 /*break*/, 4];
+                            _a.trys.push([2, 4, , 5]);
+                            dbStartTime = Date.now();
+                            return [4 /*yield*/, db.select().from(users).limit(1)];
                         case 3:
-                            dbError_1 = _a.sent();
-                            console.error("Health check DB error:", dbError_1);
-                            healthCheck.database = "disconnected";
-                            return [3 /*break*/, 4];
+                            _a.sent();
+                            dbResponseTime = Date.now() - dbStartTime;
+                            healthCheck.database = "connected";
+                            healthCheck.databaseResponseTime = dbResponseTime;
+                            console.log("\uD83D\uDD0D HEALTH CHECK: Database check successful (".concat(dbResponseTime, "ms)"));
+                            return [3 /*break*/, 5];
                         case 4:
-                            res.status(200).json(healthCheck);
-                            return [3 /*break*/, 6];
+                            dbError_1 = _a.sent();
+                            console.error("❌ HEALTH CHECK: Database error:", dbError_1);
+                            healthCheck.database = "disconnected";
+                            healthCheck.databaseError = dbError_1 instanceof Error ? dbError_1.message : String(dbError_1);
+                            return [3 /*break*/, 5];
                         case 5:
+                            // Check if server can handle requests
+                            try {
+                                serverStartTime = Date.now();
+                                routeStack = app._router.stack.length;
+                                healthCheck.routes = routeStack;
+                                healthCheck.serverResponseTime = Date.now() - serverStartTime;
+                                console.log("\uD83D\uDD0D HEALTH CHECK: Server routes check successful (".concat(routeStack, " routes)"));
+                            }
+                            catch (serverError) {
+                                console.error("❌ HEALTH CHECK: Server error:", serverError);
+                                healthCheck.serverError = serverError instanceof Error ? serverError.message : String(serverError);
+                            }
+                            healthCheck.responseTime = Date.now() - startTime;
+                            console.log("\u2705 HEALTH CHECK: Completed successfully in ".concat(healthCheck.responseTime, "ms"));
+                            res.status(200).json(healthCheck);
+                            return [3 /*break*/, 7];
+                        case 6:
                             error_1 = _a.sent();
-                            console.error("Health check failed:", error_1);
+                            responseTime = Date.now() - startTime;
+                            console.error("\u274C HEALTH CHECK: Failed after ".concat(responseTime, "ms:"), error_1);
                             res.status(503).json({
                                 status: "unhealthy",
-                                error: error_1 instanceof Error ? error_1.message : "Unknown error"
+                                error: error_1 instanceof Error ? error_1.message : "Unknown error",
+                                responseTime: responseTime,
+                                timestamp: new Date().toISOString(),
+                                stack: error_1 instanceof Error ? error_1.stack : undefined
                             });
-                            return [3 /*break*/, 6];
-                        case 6: return [2 /*return*/];
+                            return [3 /*break*/, 7];
+                        case 7: return [2 /*return*/];
                     }
                 });
             }); });
@@ -211,7 +247,7 @@ export function registerRoutes(app) {
                             existingUser = void 0;
                             if (!email) return [3 /*break*/, 3];
                             console.log('🔍 DEBUG: Checking by email:', email);
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.email, email))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.email, email))];
                         case 2:
                             emailResults = _b.sent();
                             existingUser = emailResults[0];
@@ -219,7 +255,7 @@ export function registerRoutes(app) {
                         case 3:
                             if (!!existingUser) return [3 /*break*/, 5];
                             console.log('🔍 DEBUG: Checking by phone:', phone);
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.phone, phone))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.phone, phone))];
                         case 4:
                             phoneResults = _b.sent();
                             existingUser = phoneResults[0];
@@ -238,21 +274,21 @@ export function registerRoutes(app) {
                                 name: name_1.trim(),
                                 phone: phone,
                                 email: email || null,
-                                passwordHash: hashedPassword,
+                                password: hashedPassword,
                                 role: 'client',
-                                companyId: null,
+                                language: 'es',
+                                isGuest: 'false',
                                 createdAt: new Date(),
-                                updatedAt: new Date(),
                             };
                             console.log('🔍 DEBUG: Inserting user data:', __assign(__assign({}, userData), { password: '[HIDDEN]' }));
-                            return [4 /*yield*/, db.insert(authUsers).values(userData)];
+                            return [4 /*yield*/, db.insert(users).values(userData)];
                         case 7:
                             _b.sent();
                             console.log('✅ User created successfully with ID:', userId);
                             // Create session
                             req.session.userId = userId;
                             req.session.userRole = 'client';
-                            _ = userData.passwordHash, userWithoutPassword = __rest(userData, ["passwordHash"]);
+                            _ = userData.password, userWithoutPassword = __rest(userData, ["password"]);
                             res.status(201).json({ user: userWithoutPassword, message: "User registered successfully" });
                             return [3 /*break*/, 9];
                         case 8:
@@ -266,7 +302,7 @@ export function registerRoutes(app) {
             }); });
             // Admin Registration API
             app.post("/api/auth/register/admin", function (req, res) { return __awaiter(_this, void 0, void 0, function () {
-                var _a, name_2, companyName, phone, email, password, existingUser, emailResults, phoneResults, companyId, hashedPassword, userId, userData, _, userWithoutPassword, error_5;
+                var _a, name_2, companyName, phone, email, password, existingUser, emailResults, phoneResults, hashedPassword, userId, userData, _, userWithoutPassword, error_5;
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
@@ -287,14 +323,14 @@ export function registerRoutes(app) {
                             console.log('✅ Password validation passed');
                             existingUser = void 0;
                             if (!email) return [3 /*break*/, 3];
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.email, email))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.email, email))];
                         case 2:
                             emailResults = _b.sent();
                             existingUser = emailResults[0];
                             _b.label = 3;
                         case 3:
                             if (!!existingUser) return [3 /*break*/, 5];
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.phone, phone))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.phone, phone))];
                         case 4:
                             phoneResults = _b.sent();
                             existingUser = phoneResults[0];
@@ -304,7 +340,6 @@ export function registerRoutes(app) {
                                 console.log('User already exists:', existingUser.id);
                                 return [2 /*return*/, res.status(409).json({ error: "User with this phone or email already exists" })];
                             }
-                            companyId = null;
                             return [4 /*yield*/, bcrypt.hash(password, 12)];
                         case 6:
                             hashedPassword = _b.sent();
@@ -314,21 +349,21 @@ export function registerRoutes(app) {
                                 name: name_2.trim(),
                                 phone: phone,
                                 email: email,
-                                passwordHash: hashedPassword,
+                                password: hashedPassword,
                                 role: 'admin',
-                                companyId: companyId,
+                                language: 'es',
+                                isGuest: 'false',
                                 createdAt: new Date(),
-                                updatedAt: new Date(),
                             };
                             console.log('🔍 DEBUG: Inserting admin user data:', __assign(__assign({}, userData), { password: '[HIDDEN]' }));
-                            return [4 /*yield*/, db.insert(authUsers).values(userData)];
+                            return [4 /*yield*/, db.insert(users).values(userData)];
                         case 7:
                             _b.sent();
                             console.log('✅ Admin user created successfully with ID:', userId);
                             // Create session
                             req.session.userId = userId;
                             req.session.userRole = 'admin';
-                            _ = userData.passwordHash, userWithoutPassword = __rest(userData, ["passwordHash"]);
+                            _ = userData.password, userWithoutPassword = __rest(userData, ["password"]);
                             res.status(201).json({ user: userWithoutPassword, message: "Admin registered successfully" });
                             return [3 /*break*/, 9];
                         case 8:
@@ -360,42 +395,42 @@ export function registerRoutes(app) {
                             user = void 0;
                             if (!phone) return [3 /*break*/, 3];
                             console.log('🔍 Searching user by phone:', phone);
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.phone, phone))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.phone, phone))];
                         case 2:
                             phoneResults = _b.sent();
                             user = phoneResults[0];
                             console.log('🔍 DEBUG: Phone search result:', user ? 'FOUND' : 'NOT FOUND');
                             if (user) {
-                                console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, phone: user.phone, hasPassword: !!user.passwordHash });
+                                console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, phone: user.phone, hasPassword: !!user.password });
                             }
                             return [3 /*break*/, 5];
                         case 3:
                             if (!email) return [3 /*break*/, 5];
                             console.log('🔍 Searching user by email:', email);
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.email, email))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.email, email))];
                         case 4:
                             emailResults = _b.sent();
                             user = emailResults[0];
                             console.log('🔍 DEBUG: Email search result:', user ? 'FOUND' : 'NOT FOUND');
                             if (user) {
-                                console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, email: user.email, hasPassword: !!user.passwordHash });
+                                console.log('🔍 DEBUG: Found user details:', { id: user.id, name: user.name, email: user.email, hasPassword: !!user.password });
                             }
                             _b.label = 5;
                         case 5:
                             if (!!user) return [3 /*break*/, 7];
-                            console.log('❌ User not found - Let me check what authUsers exist in DB');
-                            return [4 /*yield*/, db.select().from(authUsers)];
+                            console.log('❌ User not found - Let me check what users exist in DB');
+                            return [4 /*yield*/, db.select().from(users)];
                         case 6:
                             allUsers = _b.sent();
-                            console.log('🔍 DEBUG: All authUsers in database:', allUsers.map(function (u) { return ({ id: u.id, name: u.name, phone: u.phone, email: u.email }); }));
+                            console.log('🔍 DEBUG: All users in database:', allUsers.map(function (u) { return ({ id: u.id, name: u.name, phone: u.phone, email: u.email }); }));
                             return [2 /*return*/, res.status(404).json({ error: "User not found" })];
                         case 7:
                             console.log('User found:', user.id);
                             // Check password
-                            if (!user.passwordHash) {
+                            if (!user.password) {
                                 return [2 /*return*/, res.status(400).json({ error: "Password authentication required" })];
                             }
-                            return [4 /*yield*/, bcrypt.compare(password, user.passwordHash)];
+                            return [4 /*yield*/, bcrypt.compare(password, user.password)];
                         case 8:
                             isValidPassword = _b.sent();
                             if (!isValidPassword) {
@@ -404,7 +439,7 @@ export function registerRoutes(app) {
                             // Create session
                             req.session.userId = user.id;
                             req.session.userRole = user.role;
-                            _ = user.passwordHash, userWithoutPassword = __rest(user, ["passwordHash"]);
+                            _ = user.password, userWithoutPassword = __rest(user, ["password"]);
                             res.json({ user: userWithoutPassword, message: "Login successful" });
                             return [3 /*break*/, 10];
                         case 9:
@@ -442,14 +477,14 @@ export function registerRoutes(app) {
                             if (!req.session.userId) {
                                 return [2 /*return*/, res.status(401).json({ error: "Not authenticated" })];
                             }
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.id, req.session.userId))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.id, req.session.userId))];
                         case 1:
                             userResults = _a.sent();
                             user = userResults[0];
                             if (!user) {
                                 return [2 /*return*/, res.status(404).json({ error: "User not found" })];
                             }
-                            _ = user.passwordHash, userWithoutPassword = __rest(user, ["passwordHash"]);
+                            _ = user.password, userWithoutPassword = __rest(user, ["password"]);
                             res.json({ user: userWithoutPassword });
                             return [3 /*break*/, 3];
                         case 2:
@@ -461,62 +496,54 @@ export function registerRoutes(app) {
                     }
                 });
             }); });
-            // Advanced Authentication Routes (MFA, Email Verification)
-            app.post("/api/auth/enable-mfa", authController.enableMFA.bind(authController));
-            app.post("/api/auth/verify-mfa", authController.verifyMFA.bind(authController));
-            app.post("/api/auth/disable-mfa", authController.disableMFA.bind(authController));
-            app.post("/api/auth/verify-email", authController.verifyEmail.bind(authController));
-            app.post("/api/auth/forgot-password", authController.forgotPassword.bind(authController));
-            app.post("/api/auth/reset-password", authController.resetPassword.bind(authController));
-            app.get("/api/auth/session/validate", authController.validateSession.bind(authController));
-            // DEBUG: Temporary endpoint to check authUsers in database
-            app.get("/api/debug/authUsers", function (req, res) { return __awaiter(_this, void 0, void 0, function () {
+            // DEBUG: Temporary endpoint to check users in database
+            app.get("/api/debug/users", function (req, res) { return __awaiter(_this, void 0, void 0, function () {
                 var allUsers, error_8;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             _a.trys.push([0, 2, , 3]);
-                            console.log('🔍 DEBUG: Testing authUsers schema query');
-                            return [4 /*yield*/, db.select().from(authUsers)];
+                            console.log('🔍 DEBUG: Testing users schema query');
+                            return [4 /*yield*/, db.select().from(users)];
                         case 1:
                             allUsers = _a.sent();
-                            console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'authUsers');
-                            console.log('🔍 DEBUG: All authUsers in database:');
+                            console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'users');
+                            console.log('🔍 DEBUG: All users in database:');
                             allUsers.forEach(function (user) {
-                                console.log("   - ID: ".concat(user.id, ", Name: ").concat(user.name, ", Phone: ").concat(user.phone, ", Email: ").concat(user.email, ", HasPassword: ").concat(!!user.passwordHash));
+                                console.log("   - ID: ".concat(user.id, ", Name: ").concat(user.name, ", Phone: ").concat(user.phone, ", Email: ").concat(user.email, ", HasPassword: ").concat(!!user.password));
                             });
                             res.json({
                                 count: allUsers.length,
-                                authUsers: allUsers.map(function (u) { return ({
+                                users: allUsers.map(function (u) { return ({
                                     id: u.id,
                                     name: u.name,
                                     phone: u.phone,
                                     email: u.email,
                                     role: u.role,
-                                    hasPassword: !!u.passwordHash,
+                                    hasPassword: !!u.password,
                                     createdAt: u.createdAt
                                 }); })
                             });
                             return [3 /*break*/, 3];
                         case 2:
                             error_8 = _a.sent();
-                            console.error("❌ Error fetching authUsers:", error_8);
+                            console.error("❌ Error fetching users:", error_8);
                             console.error("❌ Error type:", typeof error_8);
                             console.error("❌ Error stack:", error_8 instanceof Error ? error_8.stack : 'No stack');
-                            res.status(500).json({ error: "Failed to fetch authUsers", details: error_8 instanceof Error ? error_8.message : String(error_8) });
+                            res.status(500).json({ error: "Failed to fetch users", details: error_8 instanceof Error ? error_8.message : String(error_8) });
                             return [3 /*break*/, 3];
                         case 3: return [2 /*return*/];
                     }
                 });
             }); });
-            // Create user (for booking flow) - UPDATED FOR NEW AUTH SYSTEM
+            // Create user (for booking flow)
             console.log('🔧 Registering POST /api/users route');
             app.post("/api/users", function (req, res) { return __awaiter(_this, void 0, void 0, function () {
                 var _a, name_3, phone, email, language, role, existingUser, emailResults, phoneResults, _1, userWithoutPassword_1, userId, userData, _, userWithoutPassword, error_9;
                 return __generator(this, function (_b) {
                     switch (_b.label) {
                         case 0:
-                            console.log('POST /api/authUsers called with body:', req.body);
+                            console.log('POST /api/users called with body:', req.body);
                             console.log('Headers:', req.headers['content-type']);
                             _b.label = 1;
                         case 1:
@@ -530,7 +557,7 @@ export function registerRoutes(app) {
                             existingUser = void 0;
                             if (!email) return [3 /*break*/, 3];
                             console.log('🔍 DEBUG: Searching by email:', email);
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.email, email))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.email, email))];
                         case 2:
                             emailResults = _b.sent();
                             console.log('🔍 DEBUG: Email query results:', emailResults.length);
@@ -540,7 +567,7 @@ export function registerRoutes(app) {
                         case 3:
                             if (!!existingUser) return [3 /*break*/, 5];
                             console.log('🔍 DEBUG: Searching by phone:', phone);
-                            return [4 /*yield*/, db.select().from(authUsers).where(eq(authUsers.phone, phone))];
+                            return [4 /*yield*/, db.select().from(users).where(eq(users.phone, phone))];
                         case 4:
                             phoneResults = _b.sent();
                             console.log('🔍 DEBUG: Phone query results:', phoneResults.length);
@@ -550,7 +577,7 @@ export function registerRoutes(app) {
                         case 5:
                             if (existingUser) {
                                 console.log('User already exists:', existingUser.id);
-                                _1 = existingUser.passwordHash, userWithoutPassword_1 = __rest(existingUser, ["passwordHash"]);
+                                _1 = existingUser.password, userWithoutPassword_1 = __rest(existingUser, ["password"]);
                                 return [2 /*return*/, res.status(200).json(userWithoutPassword_1)];
                             }
                             console.log('🔍 DEBUG: Creating new guest user');
@@ -560,18 +587,18 @@ export function registerRoutes(app) {
                                 name: name_3.trim(),
                                 phone: phone,
                                 email: email || null,
-                                passwordHash: '', // Empty password hash for booking flow authUsers (they can't login)
+                                password: '', // Empty password for booking flow users (they can't login)
                                 role: role || 'client',
-                                companyId: null,
+                                language: language || 'es',
+                                isGuest: 'true',
                                 createdAt: new Date(),
-                                updatedAt: new Date(),
                             };
                             console.log('🔍 DEBUG: Inserting user data:', __assign(__assign({}, userData), { password: '[HIDDEN]' }));
-                            return [4 /*yield*/, db.insert(authUsers).values(userData)];
+                            return [4 /*yield*/, db.insert(users).values(userData)];
                         case 6:
                             _b.sent();
                             console.log('Created guest user:', userId);
-                            _ = userData.passwordHash, userWithoutPassword = __rest(userData, ["passwordHash"]);
+                            _ = userData.password, userWithoutPassword = __rest(userData, ["password"]);
                             res.status(201).json(userWithoutPassword);
                             return [3 /*break*/, 8];
                         case 7:
