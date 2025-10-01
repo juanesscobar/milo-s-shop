@@ -17,6 +17,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    // Aumenta el límite para suprimir el warning de chunks grandes en producción
+    chunkSizeWarningLimit: 1024,
   },
   server: {
     proxy: {

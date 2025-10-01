@@ -73,11 +73,17 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  // Prefer the top-level Vite output: <repo>/dist (copied into /app/dist in Docker)
+  let distPath = path.resolve(process.cwd(), "dist");
+
+  // Fallback to legacy location if needed: build/server/public
+  if (!fs.existsSync(distPath)) {
+    distPath = path.resolve(import.meta.dirname, "public");
+  }
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the client build directory. Checked: ${path.resolve(process.cwd(), "dist")} and ${path.resolve(import.meta.dirname, "public")}. Make sure to run "npm run build".`,
     );
   }
 

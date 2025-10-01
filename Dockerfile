@@ -68,4 +68,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 USER nextjs
 
 # Comando para correr el servidor compilado con dumb-init
-CMD ["dumb-init", "node", "build/index.js"]
+CMD ["dumb-init", "node", "build/server/index.js"]
