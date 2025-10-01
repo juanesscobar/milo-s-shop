@@ -6,19 +6,12 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcrypt';
 import { storage } from "./storage";
-import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, services } from "@shared/schema";
+import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, services, users } from "@shared/schema";
 import { z } from "zod";
 
-// Import schema from db configuration (uses @shared/auth-schema)
+// Import schema from db configuration
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users as authUsers } from "@shared/auth-schema";
-import { registerClientSchema, registerAdminSchema, loginSchema } from "@shared/auth-schema";
-
-// Auth schema import moved above
-
-// Import auth controller
-import { authController } from './auth/authController';
 
 // Admin middleware
 const requireAdmin = (req: any, res: any, next: any) => {
@@ -78,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Quick DB check (optional - comment out if causing issues)
       try {
         const dbStartTime = Date.now();
-        await db.select().from(authUsers).limit(1);
+        await db.select().from(users).limit(1);
         const dbResponseTime = Date.now() - dbStartTime;
         healthCheck.database = "connected";
         healthCheck.databaseResponseTime = dbResponseTime;
@@ -169,16 +162,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('✅ Password validation passed');
 
-      // Check if user already exists using authUsers schema
+      // Check if user already exists
       let existingUser;
       if (email) {
         console.log('🔍 DEBUG: Checking by email:', email);
-        const emailResults = await db.select().from(authUsers).where(eq(authUsers.email, email));
+        const emailResults = await db.select().from(users).where(eq(users.email, email));
         [existingUser] = emailResults;
       }
       if (!existingUser) {
         console.log('🔍 DEBUG: Checking by phone:', phone);
-        const phoneResults = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+        const phoneResults = await db.select().from(users).where(eq(users.phone, phone));
         [existingUser] = phoneResults;
       }
 
@@ -190,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 12);
 
-      // Create new client user using authUsers schema
+      // Create new client user
       const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       const userData = {
         id: userId,
@@ -198,14 +191,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: phone,
         email: email || null,
         password: hashedPassword,
-        role: 'client' as const,
-        companyId: null,
+        role: 'client',
+        language: 'es',
+        isGuest: 'false',
         createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
       console.log('🔍 DEBUG: Inserting user data:', { ...userData, password: '[HIDDEN]' });
-      await db.insert(authUsers).values(userData);
+      await db.insert(users).values(userData);
       console.log('✅ User created successfully with ID:', userId);
 
       // Create session
@@ -243,11 +236,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user already exists
       let existingUser;
       if (email) {
-        const emailResults = await db.select().from(authUsers).where(eq(authUsers.email, email));
+        const emailResults = await db.select().from(users).where(eq(users.email, email));
         [existingUser] = emailResults;
       }
       if (!existingUser) {
-        const phoneResults = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+        const phoneResults = await db.select().from(users).where(eq(users.phone, phone));
         [existingUser] = phoneResults;
       }
 
@@ -255,9 +248,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('User already exists:', existingUser.id);
         return res.status(409).json({ error: "User with this phone or email already exists" });
       }
-
-      // TODO: Implement proper company management
-      const companyId = null;
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 12);
@@ -270,14 +260,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: phone,
         email: email,
         password: hashedPassword,
-        role: 'admin' as const,
-        companyId: companyId,
+        role: 'admin',
+        language: 'es',
+        isGuest: 'false',
         createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
       console.log('🔍 DEBUG: Inserting admin user data:', { ...userData, password: '[HIDDEN]' });
-      await db.insert(authUsers).values(userData);
+      await db.insert(users).values(userData);
       console.log('✅ Admin user created successfully with ID:', userId);
 
       // Create session
@@ -307,11 +297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // DEBUG: Log search criteria
       console.log('🔍 DEBUG: Search criteria - phone:', phone, 'email:', email);
 
-      // Find user by phone or email using authUsers schema
+      // Find user by phone or email
       let user;
       if (phone) {
         console.log('🔍 Searching user by phone:', phone);
-        const phoneResults = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+        const phoneResults = await db.select().from(users).where(eq(users.phone, phone));
         [user] = phoneResults;
         console.log('🔍 DEBUG: Phone search result:', user ? 'FOUND' : 'NOT FOUND');
         if (user) {
@@ -319,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       } else if (email) {
         console.log('🔍 Searching user by email:', email);
-        const emailResults = await db.select().from(authUsers).where(eq(authUsers.email, email));
+        const emailResults = await db.select().from(users).where(eq(users.email, email));
         [user] = emailResults;
         console.log('🔍 DEBUG: Email search result:', user ? 'FOUND' : 'NOT FOUND');
         if (user) {
@@ -328,10 +318,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!user) {
-        console.log('❌ User not found - Let me check what authUsers exist in DB');
-        // DEBUG: List all authUsers to see what's in the database
-        const allUsers = await db.select().from(authUsers);
-        console.log('🔍 DEBUG: All authUsers in database:', allUsers.map((u: any) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email })));
+        console.log('❌ User not found - Let me check what users exist in DB');
+        // DEBUG: List all users to see what's in the database
+        const allUsers = await db.select().from(users);
+        console.log('🔍 DEBUG: All users in database:', allUsers.map((u: any) => ({ id: u.id, name: u.name, phone: u.phone, email: u.email })));
         return res.status(404).json({ error: "User not found" });
       }
 
@@ -380,8 +370,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      // Find user using authUsers schema
-      const userResults = await db.select().from(authUsers).where(eq(authUsers.id, (req.session as any).userId));
+      // Find user
+      const userResults = await db.select().from(users).where(eq(users.id, (req.session as any).userId));
       const user = userResults[0];
 
       if (!user) {
@@ -397,28 +387,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Advanced Authentication Routes (MFA, Email Verification)
-  app.post("/api/auth/enable-mfa", authController.enableMFA.bind(authController));
-  app.post("/api/auth/verify-mfa", authController.verifyMFA.bind(authController));
-  app.post("/api/auth/disable-mfa", authController.disableMFA.bind(authController));
-  app.post("/api/auth/verify-email", authController.verifyEmail.bind(authController));
-  app.post("/api/auth/forgot-password", authController.forgotPassword.bind(authController));
-  app.post("/api/auth/reset-password", authController.resetPassword.bind(authController));
-  app.get("/api/auth/session/validate", authController.validateSession.bind(authController));
-
-  // DEBUG: Temporary endpoint to check authUsers in database
-  app.get("/api/debug/authUsers", async (req, res) => {
+  // DEBUG: Temporary endpoint to check users in database
+  app.get("/api/debug/users", async (req, res) => {
     try {
-      console.log('🔍 DEBUG: Testing authUsers schema query');
-      const allUsers = await db.select().from(authUsers);
-      console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'authUsers');
-      console.log('🔍 DEBUG: All authUsers in database:');
+      console.log('🔍 DEBUG: Testing users schema query');
+      const allUsers = await db.select().from(users);
+      console.log('🔍 DEBUG: Query successful, found', allUsers.length, 'users');
+      console.log('🔍 DEBUG: All users in database:');
       allUsers.forEach((user: any) => {
         console.log(`   - ID: ${user.id}, Name: ${user.name}, Phone: ${user.phone}, Email: ${user.email}, HasPassword: ${!!user.password}`);
       });
       res.json({
         count: allUsers.length,
-        authUsers: allUsers.map((u: any) => ({
+        users: allUsers.map((u: any) => ({
           id: u.id,
           name: u.name,
           phone: u.phone,
@@ -429,17 +410,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }))
       });
     } catch (error) {
-      console.error("❌ Error fetching authUsers:", error);
+      console.error("❌ Error fetching users:", error);
       console.error("❌ Error type:", typeof error);
       console.error("❌ Error stack:", error instanceof Error ? error.stack : 'No stack');
-      res.status(500).json({ error: "Failed to fetch authUsers", details: error instanceof Error ? error.message : String(error) });
+      res.status(500).json({ error: "Failed to fetch users", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
-  // Create user (for booking flow) - UPDATED FOR NEW AUTH SYSTEM
+  // Create user (for booking flow)
   console.log('🔧 Registering POST /api/users route');
   app.post("/api/users", async (req, res) => {
-    console.log('POST /api/authUsers called with body:', req.body);
+    console.log('POST /api/users called with body:', req.body);
     console.log('Headers:', req.headers['content-type']);
     try {
       const { name, phone, email, language, role } = req.body;
@@ -450,18 +431,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('🔍 DEBUG: Checking if user exists with phone:', phone, 'or email:', email);
-      // Check if user already exists using new auth schema - search by email first if provided, then by phone
+      // Check if user already exists - search by email first if provided, then by phone
       let existingUser;
       if (email) {
         console.log('🔍 DEBUG: Searching by email:', email);
-        const emailResults = await db.select().from(authUsers).where(eq(authUsers.email, email));
+        const emailResults = await db.select().from(users).where(eq(users.email, email));
         console.log('🔍 DEBUG: Email query results:', emailResults.length);
         [existingUser] = emailResults;
         console.log('🔍 DEBUG: Email search result:', existingUser ? `FOUND (${existingUser.id})` : 'NOT FOUND');
       }
       if (!existingUser) {
         console.log('🔍 DEBUG: Searching by phone:', phone);
-        const phoneResults = await db.select().from(authUsers).where(eq(authUsers.phone, phone));
+        const phoneResults = await db.select().from(users).where(eq(users.phone, phone));
         console.log('🔍 DEBUG: Phone query results:', phoneResults.length);
         [existingUser] = phoneResults;
         console.log('🔍 DEBUG: Phone search result:', existingUser ? `FOUND (${existingUser.id})` : 'NOT FOUND');
@@ -475,22 +456,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔍 DEBUG: Creating new guest user');
       // Create new client user WITHOUT password (for booking flow compatibility)
-      // In production, authUsers should register through /api/auth/register
       const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
       const userData = {
         id: userId,
         name: name.trim(),
         phone: phone,
         email: email || null,
-        password: '', // Empty password hash for booking flow authUsers (they can't login)
-        role: (role as 'client' | 'admin') || 'client',
-        companyId: null,
+        password: '', // Empty password for booking flow users (they can't login)
+        role: role || 'client',
+        language: language || 'es',
+        isGuest: 'true',
         createdAt: new Date(),
-        updatedAt: new Date(),
       };
 
       console.log('🔍 DEBUG: Inserting user data:', { ...userData, password: '[HIDDEN]' });
-      await db.insert(authUsers).values(userData);
+      await db.insert(users).values(userData);
       console.log('Created guest user:', userId);
 
       // Return user without password field
