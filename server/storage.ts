@@ -6,8 +6,6 @@ import {
   users, vehicles, services, bookings
 } from "@shared/schema";
 
-// Import auth schema for new authentication system
-import { users as authUsers } from "@shared/auth-schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -60,14 +58,14 @@ export class DatabaseStorage implements IStorage {
       name: insertUser.name,
       phone: insertUser.phone,
       email: insertUser.email || null,
-      password: (insertUser as any).password || null, // Include password if provided
+      password: (insertUser as any).password || null,
       role: insertUser.role || "client",
       language: insertUser.language || "es",
-      isGuest: insertUser.isGuest ?? true,
+      isGuest: String(insertUser.isGuest || "true"),
       createdAt: new Date()
     };
     console.log('🔍 DEBUG: User data to insert:', { ...userData, password: userData.password ? '[HIDDEN]' : 'null' });
-    await db.insert(users).values([userData]);
+    await db.insert(users).values(userData);
     console.log('✅ User created successfully with ID:', userId);
     return userData as User;
   }
@@ -84,9 +82,10 @@ export class DatabaseStorage implements IStorage {
       // If prices is a string and looks like JSON, parse it
       if (typeof service.prices === 'string') {
         try {
+          const pricesStr = service.prices;
           // Check if it's a JSON string (starts with { or [)
-          if (service.prices.trim().startsWith('{') || service.prices.trim().startsWith('[')) {
-            parsedPrices = JSON.parse(service.prices);
+          if (pricesStr.trim().startsWith('{') || pricesStr.trim().startsWith('[')) {
+            parsedPrices = JSON.parse(pricesStr) as any;
           }
         } catch (e) {
           console.warn('Failed to parse prices for service', service.id, ':', e);

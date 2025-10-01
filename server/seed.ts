@@ -29,17 +29,17 @@ async function createTestService() {
       slug: "test_manual",
       title: "Servicio de Prueba Manual",
       description: "Este es un servicio de prueba creado manualmente",
-      prices: JSON.stringify({
+      prices: {
         auto: 50000,
         suv: 60000,
         camioneta: 70000
-      }),
+      } as any,
       active: "true"
     };
 
     console.log("📝 Test service data:", JSON.stringify(testService, null, 2));
 
-    await db.insert(services).values(testService);
+    await db.insert(services).values(testService as any);
     console.log("✅ Test service created successfully");
 
     // Verify it was created
@@ -50,10 +50,10 @@ async function createTestService() {
     }
 
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error("❌ Failed to create test service:", error);
-    console.error("❌ Error details:", error.message);
-    console.error("❌ Error stack:", error.stack);
+    console.error("❌ Error details:", error?.message);
+    console.error("❌ Error stack:", error?.stack);
     return false;
   }
 }
@@ -64,11 +64,11 @@ const seedServices = [
     slug: "basic_wash",
     title: "Lavado Básico",
     description: "Lavado exterior completo con jabón, enjuague y secado. Incluye llantas y rines.",
-    prices: JSON.stringify({
+    prices: {
       auto: 25000,
       suv: 30000,
       camioneta: 35000
-    }),
+    } as any,
     active: "true"
   },
   {
@@ -76,11 +76,11 @@ const seedServices = [
     slug: "premium_wash",
     title: "Lavado Premium",
     description: "Lavado completo exterior e interior, aspirado, tablero, cristales y perfumado.",
-    prices: JSON.stringify({
+    prices: {
       auto: 45000,
       suv: 55000,
       camioneta: 65000
-    }),
+    } as any,
     active: "true"
   },
   {
@@ -88,11 +88,11 @@ const seedServices = [
     slug: "detail_complete",
     title: "Detallado Completo",
     description: "Servicio premium con cera, pulido, tratamiento de cuero y protección UV.",
-    prices: JSON.stringify({
+    prices: {
       auto: 80000,
       suv: 100000,
       camioneta: 120000
-    }),
+    } as any,
     active: "true"
   },
   {
@@ -100,11 +100,11 @@ const seedServices = [
     slug: "express_wash",
     title: "Lavado Express",
     description: "Lavado rápido exterior, ideal para mantenimiento semanal.",
-    prices: JSON.stringify({
+    prices: {
       auto: 15000,
       suv: 18000,
       camioneta: 22000
-    }),
+    } as any,
     active: "true"
   },
   {
@@ -112,11 +112,11 @@ const seedServices = [
     slug: "engine_wash",
     title: "Lavado de Motor",
     description: "Limpieza especializada del compartimento del motor con productos específicos.",
-    prices: JSON.stringify({
+    prices: {
       auto: 35000,
       suv: 40000,
       camioneta: 45000
-    }),
+    } as any,
     active: "true"
   },
   {
@@ -124,11 +124,11 @@ const seedServices = [
     slug: "ceramic_coating",
     title: "Recubrimiento Cerámico",
     description: "Protección avanzada con recubrimiento cerámico de larga duración.",
-    prices: JSON.stringify({
+    prices: {
       auto: 150000,
       suv: 180000,
       camioneta: 220000
-    }),
+    } as any,
     active: "true"
   }
 ];
@@ -168,7 +168,7 @@ export async function seedDatabase() {
       console.log(`  ➕ [${i + 1}/${seedServices.length}] Inserting service: ${service.title} (${service.slug})`);
 
       try {
-        await db.insert(services).values(service);
+        await db.insert(services).values(service as any);
         console.log(`    ✅ Service inserted successfully: ${service.id}`);
       } catch (serviceError) {
         console.error(`    ❌ Failed to insert service ${service.slug}:`, serviceError);
