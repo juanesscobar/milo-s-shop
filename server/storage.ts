@@ -80,12 +80,14 @@ export class DatabaseStorage implements IStorage {
       let parsedPrices = service.prices;
       
       // If prices is a string and looks like JSON, parse it
-      if (typeof service.prices === 'string') {
+      // Note: prices is typed as object but stored as text in DB
+      const pricesValue = service.prices as unknown;
+      if (typeof pricesValue === 'string') {
         try {
-          const pricesStr = service.prices;
+          const trimmedPrices = pricesValue.trim();
           // Check if it's a JSON string (starts with { or [)
-          if (pricesStr.trim().startsWith('{') || pricesStr.trim().startsWith('[')) {
-            parsedPrices = JSON.parse(pricesStr) as any;
+          if (trimmedPrices.startsWith('{') || trimmedPrices.startsWith('[')) {
+            parsedPrices = JSON.parse(trimmedPrices) as any;
           }
         } catch (e) {
           console.warn('Failed to parse prices for service', service.id, ':', e);
