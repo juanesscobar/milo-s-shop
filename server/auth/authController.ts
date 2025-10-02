@@ -1,6 +1,6 @@
-import { authService } from './authService';
-import { CaptchaService } from './captchaService';
-import { registerClientSchema, registerAdminSchema, loginSchema } from '@shared/auth-schema';
+import { authService } from './authService.js';
+import { CaptchaService } from './captchaService.js';
+import { registerClientSchema, registerAdminSchema, loginSchema } from '../../shared/auth-schema.js';
 import { z } from 'zod';
 import express from 'express';
 

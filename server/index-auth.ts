@@ -2,21 +2,21 @@ import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import session from 'express-session';
 import path from 'path';
-import { setupVite, serveStatic, log } from "./vite";
+import { setupVite, serveStatic, log } from "./vite.js";
 import helmet from 'helmet';
 import cors from 'cors';
 
 // Import new authentication system
-import { createAuthRoutes } from './auth/authRoutes';
-import { 
-  securityHeaders, 
-  securityLogger, 
+import { createAuthRoutes } from './auth/authRoutes.js';
+import {
+  securityHeaders,
+  securityLogger,
   sanitizeInput,
-  rateLimitMiddleware 
-} from './auth/authMiddleware';
+  rateLimitMiddleware
+} from './auth/authMiddleware.js';
 
 // Import existing functionality
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes.js";
 
 /**
  * Production-ready Express server with comprehensive authentication system

@@ -4,9 +4,9 @@ import {
   type Service, type InsertService,
   type Booking, type InsertBooking,
   users, vehicles, services, bookings
-} from "@shared/schema";
+} from "../shared/schema.js";
 
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq, desc, sql } from "drizzle-orm";
 
 // Simplified Storage interface for authentication testing

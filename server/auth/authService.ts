@@ -1,5 +1,5 @@
-import { db } from '../db';
-import { users, insertUserSchema } from '@shared/schema';
+import { db } from '../db.js';
+import { users, insertUserSchema } from '../../shared/schema.js';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';

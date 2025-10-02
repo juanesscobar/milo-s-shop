@@ -1,5 +1,5 @@
 import rateLimit from 'express-rate-limit';
-import { authService } from './authService';
+import { authService } from './authService.js';
 import express from 'express';
 
 /**

@@ -5,12 +5,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcrypt';
-import { storage } from "./storage";
-import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, services, users } from "@shared/schema";
+import { storage } from "./storage.js";
+import { insertServiceSchema, insertUserSchema, insertVehicleSchema, insertBookingSchema, services, users } from "../shared/schema.js";
 import { z } from "zod";
 
 // Import schema from db configuration
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq } from "drizzle-orm";
 
 // Admin middleware

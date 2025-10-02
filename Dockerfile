@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.6
 # Dockerfile de producción para Milos-Shop
 
 # Etapa 1: Build
@@ -8,23 +9,22 @@ WORKDIR /app
 # Copiar los package.json primero para aprovechar la cache
 COPY package*.json ./
 
-# Instalar TODAS las dependencias (incluye devDependencies necesarias para vite build y tsc)
-RUN npm install
-
-# Ejecutar npm audit fix para resolver vulnerabilidades de alta severidad
-RUN npm audit fix --audit-level=high
+# Instalar dependencias (incluye devDependencies para vite/tsc) usando caché de npm (BuildKit)
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
 # Copiar el resto del código
 COPY . .
 
-# Log para verificar dependencias
-RUN echo "Verificando dependencias @radix-ui:" && npm list | grep @radix-ui || echo "Algunas dependencias @radix-ui pueden faltar" && echo "Verificando socket.io-client:" && npm list socket.io-client || echo "socket.io-client puede faltar"
-
 # Construir la app con Vite (cliente)
 RUN npm run build
 
-# Compilar el servidor TypeScript
-RUN npm run build:server
+# Compilar el servidor TypeScript (build de producción NodeNext)
+RUN npx tsc -p tsconfig.build.json
+
+# Validaciones rápidas de artefactos (sin ejecutar el servidor)
+RUN ls -la build/server && \
+    test -f build/server/routes.js && echo "✅ routes.js existe" && \
+    grep -n 'from "./routes.js"' build/server/index.js && echo "✅ import con extensión .js presente"
 
 
 # Etapa 2: Producción con Node + Express
@@ -40,11 +40,9 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 RUN chown -R nextjs:nodejs /app
 
-# Copiar solo los package.json
-COPY package*.json ./
-
-# Instalar solo dependencias de producción
-RUN npm install --omit=dev && npm cache clean --force
+# Copiar node_modules del builder y podar a prod (evita segundo npm install)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+RUN npm prune --omit=dev && npm cache clean --force
 
 # Copiar los artefactos generados: cliente (client/dist) y servidor compilado (build)
 COPY --from=builder --chown=nextjs:nodejs /app/client/dist ./dist
