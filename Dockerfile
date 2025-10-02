@@ -55,6 +55,10 @@ RUN npm prune --omit=dev && npm cache clean --force
 COPY --from=builder /app/client/dist ./dist
 COPY --from=builder /app/build ./build
 
+# Preparar directorio de adjuntos con permisos de escritura
+RUN mkdir -p /app/attached_assets/service_images && \
+    chown -R nextjs:nodejs /app
+
 # Variables de entorno
 ENV NODE_ENV=production
 ENV PORT=10000
