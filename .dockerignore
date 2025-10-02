@@ -1,164 +1,34 @@
-# ================================================
-# .dockerignore optimizado para Milo's Shop
-# Reduce el contexto de build para mejor rendimiento
-# ================================================
+# Dependencies
+node_modules
+npm-cache
+pnpm-lock.yaml
+yarn.lock
 
-# ===== Node & NPM =====
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-.npm
-.yarn
-.pnpm-store/
-
-# ===== Build Outputs =====
-dist/
-build/
-.next/
-.nuxt/
-.cache/
-.parcel-cache/
-.turbo/
+# Build artifacts
+dist
+client/dist
+build
+coverage
 *.tsbuildinfo
 
-# ===== Development Files =====
+# Local env files (never copy secrets to image)
 .env
-.env.local
-.env.development
-.env.test
-.env.production.local
-*.local
+.env.*
+!.env.example
 
-# ===== Database Files =====
-*.db
-*.sqlite
-*.sqlite3
-*.db-shm
-*.db-wal
-data/
-
-# ===== Test & Debug Files =====
-coverage/
-.nyc_output/
-test/
-tests/
-__tests__/
-*.test.js
-*.test.ts
-*.spec.js
-*.spec.ts
-test-*.js
-test-*.json
-check-*.js
-seed-*.js
-fix-*.js
-create-*.js
-debug-*.js
-apply-*.js
-backup-*.cjs
-setup-*.js
-
-# ===== Logs =====
-logs/
-*.log
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-
-# ===== IDE & Editor =====
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-*.sublime-workspace
-*.sublime-project
-.settings/
-.project
-.classpath
-
-# ===== OS Files =====
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
-
-# ===== Git =====
-.git/
+# Git and editor files
+.git
 .gitignore
-.gitattributes
-.github/
+.vscode
+.DS_Store
+*.log
+Thumbs.db
 
-# ===== Documentation =====
-README.md
-DEPLOYMENT.md
-MAINTENANCE.md
-API.md
-design_guidelines.md
-replit.md
-docs/
-*.md
+# Project-specific big/unnecessary dirs
+flyctl
+attached_assets
 
-# ===== Docker Files (no incluir en contexto) =====
-Dockerfile*
+# Tests and misc
+tests
+test
 docker-compose*.yml
-.dockerignore
-
-# ===== CI/CD =====
-.gitlab-ci.yml
-.travis.yml
-.circleci/
-jenkins/
-azure-pipelines.yml
-
-# ===== Temporary Files =====
-tmp/
-temp/
-*.tmp
-*.temp
-*.cache
-
-# ===== Package Manager Lock Files (opcional) =====
-# Comentar si necesitas reproducibilidad exacta
-# package-lock.json
-# yarn.lock
-# pnpm-lock.yaml
-
-# ===== Misc Development Files =====
-.replit
-replit.nix
-components.json.bak
-vehicle-selection-final.png
-.kilocode/
-.kilocodemodes
-railway.json
-railway.toml
-
-# ===== TypeScript Config (mantener para build) =====
-# NO ignorar estos archivos - necesarios para build:
-# tsconfig.json
-# drizzle.config.ts
-# vite.config.ts
-# tailwind.config.ts
-# postcss.config.js
-# components.json
-# package.json
-# package-lock.json
-
-# ===== Source Code (mantener para build) =====
-# NO ignorar estos directorios - necesarios para build:
-# client/
-# server/
-# shared/
-# migrations/

@@ -1,24 +1,30 @@
-# syntax=docker/dockerfile:1.6
-# Dockerfile de producción para Milos-Shop
-
 # Etapa 1: Build
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
+
+# Instalar dependencias del sistema necesarias para build de paquetes nativos
+RUN apt-get update && apt-get install -y \
+    python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copiar los package.json primero para aprovechar la cache
+# Copiar package.json y lockfile primero (para aprovechar cache)
 COPY package*.json ./
 
-# Instalar dependencias (incluye devDependencies para vite/tsc) usando caché de npm (BuildKit)
-RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
+# Instalar dependencias con cache de npm
+RUN npm ci --no-audit --no-fund
 
-# Copiar el resto del código
-COPY . .
+# Copiar archivos necesarios para el build (evita contexto masivo y filtrar secretos)
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY postcss.config.js ./
+COPY tailwind.config.ts ./
+COPY client ./client
+COPY server ./server
+COPY shared ./shared
 
-# Construir la app con Vite (cliente)
+# Build frontend (Vite) y backend (TypeScript)
 RUN npm run build
-
-# Compilar el servidor TypeScript (build de producción NodeNext)
 RUN npx tsc -p tsconfig.build.json
 
 # Validaciones rápidas de artefactos (sin ejecutar el servidor)
@@ -26,44 +32,43 @@ RUN ls -la build/server && \
     test -f build/server/routes.js && echo "✅ routes.js existe" && \
     grep -n 'from "./routes.js"' build/server/index.js && echo "✅ import con extensión .js presente"
 
+# Etapa 2: Producción
+FROM node:20-slim AS runner
 
-# Etapa 2: Producción con Node + Express
-FROM node:20-alpine AS runner
-
-# Instalar dumb-init para manejar señales correctamente
-RUN apk add --no-cache dumb-init
-
-# Crear usuario no-root para seguridad
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+# Instalar dumb-init para manejo correcto de señales
+RUN apt-get update && apt-get install -y --no-install-recommends dumb-init && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN chown -R nextjs:nodejs /app
 
-# Copiar node_modules del builder y podar a prod (evita segundo npm install)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Crear usuario no-root
+RUN addgroup --system nodejs && adduser --system --ingroup nodejs nextjs
+
+# Copiar package manifests para permitir npm prune
+COPY --from=builder /app/package*.json ./
+
+# Copiar node_modules y podar a prod (evita segundo npm install)
+COPY --from=builder /app/node_modules ./node_modules
 RUN npm prune --omit=dev && npm cache clean --force
 
-# Copiar los artefactos generados: cliente (client/dist) y servidor compilado (build)
-COPY --from=builder --chown=nextjs:nodejs /app/client/dist ./dist
-COPY --from=builder --chown=nextjs:nodejs /app/build ./build
+# Copiar artefactos compilados (frontend y backend)
+COPY --from=builder /app/client/dist ./dist
+COPY --from=builder /app/build ./build
 
 # Variables de entorno
 ENV NODE_ENV=production
-
-# Puerto por defecto (Render usa 10000, pero se puede sobrescribir con variable de entorno)
 ENV PORT=10000
 
-# Exponer puerto dinámico
+# Render expone el puerto a través de $PORT
 EXPOSE 10000
 
-# Healthcheck optimizado para PostgreSQL y servicios cloud (Render, Fly.io, Railway)
-# Usa el puerto de la variable de entorno PORT
+# Healthcheck para Render
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "const http = require('http'); const port = process.env.PORT || 10000; const req = http.get('http://localhost:' + port + '/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => process.exit(1)); req.setTimeout(10000, () => { req.destroy(); process.exit(1); });"
 
 # Cambiar a usuario no-root
 USER nextjs
 
-# Comando para correr el servidor compilado con dumb-init
-CMD ["dumb-init", "node", "build/server/index.js"]
+# Entrypoint con dumb-init para manejo correcto de señales
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "build/server/index.js"]

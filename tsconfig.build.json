@@ -12,6 +12,7 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "declaration": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "tsBuildInfoFile": "/root/.tsbuildcache/tsbuildinfo"
   }
 }
