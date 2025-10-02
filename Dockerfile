@@ -22,6 +22,7 @@ COPY tailwind.config.ts ./
 COPY client ./client
 COPY server ./server
 COPY shared ./shared
+COPY migrations ./migrations
 
 # Build frontend (Vite) y backend (TypeScript)
 RUN npm run build
@@ -54,6 +55,8 @@ RUN npm prune --omit=dev && npm cache clean --force
 # Copiar artefactos compilados (frontend y backend)
 COPY --from=builder /app/client/dist ./dist
 COPY --from=builder /app/build ./build
+# Copiar migraciones de Drizzle para ejecutar en runtime
+COPY --from=builder /app/migrations ./migrations
 
 # Preparar directorio de adjuntos con permisos de escritura
 RUN mkdir -p /app/attached_assets/service_images && \

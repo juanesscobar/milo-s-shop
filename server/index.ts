@@ -6,6 +6,7 @@ import * as Sentry from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
+import { runMigrations } from "./db.js";
 import bodyParser from 'body-parser';
 
 // Initialize Sentry
@@ -96,6 +97,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ejecutar migraciones antes de registrar rutas
+  try {
+    console.log('🏗️ Ejecutando migraciones de base de datos...');
+    await runMigrations();
+    console.log('✅ Migraciones aplicadas');
+  } catch (err) {
+    console.error('❌ Error ejecutando migraciones:', err);
+    process.exit(1);
+  }
+
   console.log('🔧 Registrando rutas...');
   const server = await registerRoutes(app);
   console.log('✅ Rutas registradas exitosamente');

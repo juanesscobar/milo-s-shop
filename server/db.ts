@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import * as schema from "../shared/schema.js";
 
@@ -16,3 +17,14 @@ const client = postgres(process.env.DATABASE_URL, {
 });
 
 export const db = drizzle({ client, schema });
+
+/**
+ * Ejecuta migraciones de Drizzle desde la carpeta ./migrations
+ * Idempotente: usa la tabla __drizzle_migrations
+ */
+export async function runMigrations(): Promise<void> {
+  const start = Date.now();
+  console.log('🏗️ Running database migrations...');
+  await migrate(db, { migrationsFolder: 'migrations' });
+  console.log(`✅ Migrations completed in ${Date.now() - start}ms`);
+}
