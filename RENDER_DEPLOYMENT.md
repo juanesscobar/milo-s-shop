@@ -38,6 +38,12 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
+### Para ADMIN_SIGNUP_SECRET (código privado para registro de administradores):
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+#c964fcfe0de5364e08c96a487707542de7e55691099e28b60cd882f986c6a570
+
 **Guarda estos valores**, los necesitarás en el siguiente paso.
 
 ---

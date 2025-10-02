@@ -37,7 +37,8 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
     phone: '',
     email: '',
     password: '',
-    passwordConfirm: ''
+    passwordConfirm: '',
+    adminSecret: ''
   });
 
   const content: Record<string, any> = {
@@ -50,6 +51,7 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
       name: 'Nombre completo',
       companyName: 'Nombre de la empresa',
       phone: 'Teléfono',
+      accessCode: 'Código de acceso',
       loginButton: 'Iniciar Sesión',
       registerButton: 'Registrarse',
       backToHome: 'Volver al inicio',
@@ -169,6 +171,14 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
       });
       return;
     }
+    if (userType === 'admin' && !registerData.adminSecret) {
+      toast({
+        title: '❌ Código de acceso requerido',
+        description: 'Debes ingresar el código de acceso para registrarte como administrador',
+        variant: 'destructive',
+      });
+      return;
+    }
     registerMutation.mutate(registerData);
   };
 
@@ -271,6 +281,20 @@ export default function AuthPage({ language = 'es', userType }: AuthPageProps) {
                     </div>
                   )}
 
+                  {userType === 'admin' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="register-access-code">{t.accessCode}</Label>
+                      <Input
+                        id="register-access-code"
+                        type="password"
+                        value={registerData.adminSecret}
+                        onChange={(e) => setRegisterData(prev => ({ ...prev, adminSecret: e.target.value }))}
+                        placeholder="Código de acceso privado"
+                        required
+                      />
+                    </div>
+                  )}
+                  
                   <div className="space-y-2">
                     <Label htmlFor="register-phone">{t.phone}</Label>
                     <Input

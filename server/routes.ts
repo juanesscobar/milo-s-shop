@@ -117,8 +117,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Services API
   app.get("/api/services", async (req, res) => {
     try {
-      const services = await storage.getAllServices();
-      res.json(services);
+      const vehicleType = (req.query.vehicleType as string | undefined)?.toLowerCase();
+      console.log('🔍 DEBUG: GET /api/services vehicleType:', vehicleType);
+
+      // 1) Intentar cargar desde DB
+      let list = await storage.getAllServices();
+
+      // 2) Si DB está vacía en producción, hacer fallback a services.json y sembrar simple
+      if (!list || list.length === 0) {
+        console.warn('⚠️ No hay servicios en DB. Usando fallback desde services.json');
+        try {
+          const dataPath = path.join(process.cwd(), 'client', 'src', 'data', 'services.json');
+          const raw = fs.readFileSync(dataPath, 'utf8');
+          const json = JSON.parse(raw) as Array<any>;
+
+          const now = new Date();
+          const rows = json.map(s => ({
+            id: `service_${s.slug}`,                 // id estable por slug
+            slug: s.slug,
+            title: s.titleEs,
+            description: s.copyEs,
+            // Guardar JSON string para evitar "[object Object]" en columna text
+            prices: JSON.stringify(s.prices) as any,
+            durationMin: s.durationMin,
+            imageUrl: s.imageUrl,
+            active: "true" as any,
+            createdAt: now
+          }));
+
+          // Intentar insertar; si ya existen, ignorar errores
+          try {
+            await db.insert(services).values(rows);
+            console.log(`✅ Fallback: insertados ${rows.length} servicios en DB`);
+          } catch (e) {
+            console.warn('⚠️ Fallback insert warning (posibles duplicados):', (e as Error).message);
+          }
+
+          // Releer desde DB para mantener formateo consistente
+          list = await storage.getAllServices();
+        } catch (e) {
+          console.error('❌ Fallback services.json error:', e);
+          list = [];
+        }
+      }
+
+      // 3) Filtrar por vehicleType si viene en query: mantener solo los que tienen precio para ese tipo
+      if (vehicleType) {
+        list = list.filter(s => {
+          const prices: any = s.prices || {};
+          return prices && prices[vehicleType] != null;
+        });
+      }
+
+      console.log(`✅ Servicios a responder: ${list.length}`);
+      res.json(list);
     } catch (error) {
       console.error("Error fetching services:", error);
       res.status(500).json({ error: "Failed to fetch services" });
@@ -216,16 +268,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin Registration API
   app.post("/api/auth/register/admin", async (req, res) => {
-    console.log('POST /api/auth/register/admin called with body:', req.body);
+    console.log('POST /api/auth/register/admin called');
     try {
-      const { name, companyName, phone, email, password } = req.body;
+      const { name, companyName, phone, email, password, adminSecret } = req.body || {};
+
+      // Simple gate to evitar registros públicos no autorizados
+      const expectedSecret = process.env.ADMIN_SIGNUP_SECRET;
+      if (!expectedSecret) {
+        console.error('❌ ADMIN_SIGNUP_SECRET no configurado en el servidor');
+        return res.status(500).json({ error: "Server misconfiguration: ADMIN_SIGNUP_SECRET not set" });
+      }
+      if (!adminSecret || adminSecret !== expectedSecret) {
+        console.warn('❌ Intento de registro admin bloqueado por secreto inválido');
+        return res.status(403).json({ error: "Invalid admin access code" });
+      }
 
       if (!name || !companyName || !phone || !email || !password) {
         console.log('❌ Validation failed: missing required fields');
         return res.status(400).json({ error: "All fields are required for admin registration" });
       }
 
-      // Validate password strength
       if (password.length < 8) {
         console.log('❌ Password validation failed: too short');
         return res.status(400).json({ error: "Password must be at least 8 characters long" });
@@ -665,6 +727,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'El slug del servicio es requerido' });
       }
 
+      // Special case: payment capture uploads are not tied to a service
+      if (serviceSlug === 'payment-capture') {
+        const imagePath = `service_images/${req.file.filename}`;
+        const fullImageUrl = `/attached_assets/${imagePath}`;
+        console.log(`✅ Payment capture uploaded: ${req.file.filename}`);
+
+        return res.json({
+          success: true,
+          message: 'Captura de pago subida exitosamente',
+          imageUrl: fullImageUrl,
+          filename: req.file.filename,
+          serviceSlug
+        });
+      }
+
       // Validate service exists
       const [existingService] = await db.select()
         .from(services)
@@ -736,7 +813,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 DEBUG: Socket ID:', socket.id);
 
       // Basic admin auth - in production, use proper JWT or session validation
-      const adminToken = process.env.ADMIN_WS_TOKEN || 'admin-secret-key';
+      const adminToken = process.env.ADMIN_WS_TOKEN || process.env.VITE_ADMIN_WS_TOKEN || 'admin-secret-key';
       console.log('🔍 DEBUG: Expected adminToken:', adminToken);
 
       if (authToken !== adminToken) {
