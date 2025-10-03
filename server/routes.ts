@@ -127,20 +127,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!list || list.length === 0) {
         console.warn('⚠️ No hay servicios en DB. Usando fallback desde services.json');
         try {
-          const dataPath = path.join(process.cwd(), 'client', 'src', 'data', 'services.json');
+          // Resolver ruta del seed JSON en producción o desarrollo
+          const candidatePaths = [
+            process.env.SERVICES_SEED_JSON_PATH,
+            path.join(process.cwd(), 'build', 'server', 'assets', 'services.json'),
+            path.join(process.cwd(), 'client', 'src', 'data', 'services.json'),
+          ].filter(Boolean) as string[];
+
+          let dataPath: string | null = null;
+          for (const p of candidatePaths) {
+            try {
+              if (fs.existsSync(p)) {
+                dataPath = p;
+                break;
+              }
+            } catch {}
+          }
+
+          if (!dataPath) {
+            throw new Error('Seed services.json not found in any known location');
+          }
+
+          console.log('🔍 Fallback usando services.json en:', dataPath);
           const raw = fs.readFileSync(dataPath, 'utf8');
           const json = JSON.parse(raw) as Array<any>;
 
           const now = new Date();
           const rows = json.map(s => ({
-            id: `service_${s.slug}`,                 // id estable por slug
+            id: `service_${s.slug}`, // id estable por slug
             slug: s.slug,
-            title: s.titleEs,
-            description: s.copyEs,
+            title: s.titleEs ?? s.title ?? s.slug,
+            description: s.copyEs ?? s.description ?? '',
             // Guardar JSON string para evitar "[object Object]" en columna text
             prices: JSON.stringify(s.prices) as any,
-            durationMin: s.durationMin,
-            imageUrl: s.imageUrl,
+            durationMin: s.durationMin ?? s.duration ?? null,
+            imageUrl: s.imageUrl ?? null,
             active: "true" as any,
             createdAt: now
           }));
